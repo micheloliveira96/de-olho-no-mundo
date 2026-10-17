@@ -53,7 +53,7 @@ export default function Home() {
   }, []);
   useEffect(() => { if (favoriteReady) localStorage.setItem("de-olho-favorites", JSON.stringify(favorites)); }, [favorites,favoriteReady]);
   const toggleFavorite = (symbol) => setFavorites(current => current.includes(symbol) ? current.filter(x => x !== symbol) : [...current, symbol]);
-  const openSection = (section) => { setActive(section); setSelectedCoin(null); };
+  const openSection = (section) => { if (section === "Câmbio") { window.location.href = "/cambio"; return; } setActive(section); setSelectedCoin(null); };
   const cryptoById = useMemo(() => Object.fromEntries(crypto.map(c => [c.id,c])),[crypto]);
 
   const loadRates = useCallback(async () => {
