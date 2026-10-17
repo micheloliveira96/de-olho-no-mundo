@@ -45,7 +45,7 @@ export default function Home() {
 
   useEffect(() => {
     loadRates();
-    const timer = setInterval(loadRates, 5 * 60 * 1000);
+    const timer = setInterval(loadRates, 10 * 60 * 1000);
     return () => clearInterval(timer);
   }, [loadRates]);
 
@@ -85,7 +85,7 @@ export default function Home() {
       <header className="topbar"><span>Painel <b>/</b> {active}</span><span className="live"><i/> {lastUpdated ? "Atualização automática ativa" : "A ligar à fonte de dados"}</span></header>
       <div className="page">
         <div className="welcome"><div><p className="eyebrow">● O TEU RADAR FINANCEIRO</p><h1>De olho no <em>mundo.</em></h1><p className="subtitle">Câmbio, cripto e mercados financeiros — tudo num só lugar.</p></div><span className="tag">CÂMBIO · DADOS DE MERCADO</span></div>
-        <div className="notice"><span>i</span><div><b>{error ? "A fonte de dados precisa de configuração" : "Cotações cambiais"}</b><p>{error || "Dólar e euro em reais, com atualização automática a cada 5 minutos e histórico diário para o gráfico."}{lastUpdated && !error ? " Última consulta: " + lastUpdated.toLocaleTimeString("pt-PT") + "." : ""}</p></div></div>
+        <div className="notice"><span>i</span><div><b>{error ? "A fonte de dados precisa de configuração" : "Cotações cambiais"}</b><p>{error || "Dólar e euro em reais, com atualização automática a cada 10 minutos e histórico diário para o gráfico."}{lastUpdated && !error ? " Última consulta: " + lastUpdated.toLocaleTimeString("pt-PT") + "." : ""}</p></div></div>
         <div className="sectionTitle"><div><h2>Mercado em resumo</h2><p>Taxas de câmbio atuais da fonte selecionada.</p></div><button className="textButton" onClick={()=>setActive("Mercados")}>Explorar mercados ↗</button></div>
         <div className="stats">
           {pairs.map(p=><article className="stat" key={p.symbol}><div className="statHead"><span>{p.label}</span><span className={"coin "+p.tone}>{p.icon}</span></div><div className="value">{rates[p.symbol] ? money(rates[p.symbol]) : "—"} <small>{p.detail}</small></div><span className="pending">{rates[p.symbol] ? "Fonte: Twelve Data" : loading ? "A carregar…" : "Sem cotação"}</span></article>)}
