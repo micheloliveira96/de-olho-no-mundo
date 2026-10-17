@@ -22,10 +22,13 @@ export async function GET(request) {
 
   try {
     const history = searchParams.get("history") === "true";
+    const requestedPeriod = searchParams.get("period") || "1M";
+    const periodSizes = { "1D": "2", "1S": "7", "1M": "30", "3M": "90", "1A": "365" };
+    const outputsize = history ? (periodSizes[requestedPeriod] || periodSizes["1M"]) : "1";
     const params = new URLSearchParams({
       symbol,
       interval: "1day",
-      outputsize: history ? "45" : "1",
+      outputsize,
       apikey: apiKey,
       format: "JSON"
     });
