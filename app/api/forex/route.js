@@ -23,12 +23,15 @@ export async function GET(request) {
   try {
     const history = searchParams.get("history") === "true";
     const requestedPeriod = searchParams.get("period") || "1M";
-    const periodSizes = { "1D": "2", "1S": "7", "1M": "30", "3M": "90", "1A": "365" };
-    const outputsize = history ? (periodSizes[requestedPeriod] || periodSizes["1M"]) : "1";
+    const periodSettings = { "1D": { interval: "1h", outputsize: "24" }, "1S": { interval: "1day", outputsize: "7" }, "1M": { interval: "1day", outputsize: "30" }, "3M": { interval: "1day", outputsize: "90" }, "1A": { interval: "1day", outputsize: "365" } };
+    if (history && !periodSettings[requestedPeriod]) {
+      return NextResponse.json({ error: "Período inválido. Usa 1D, 1S, 1M, 3M ou 1A." }, { status: 400 });
+    }
+    const settings = history ? periodSettings[requestedPeriod] : { interval: "1day", outputsize: "1" };
     const params = new URLSearchParams({
       symbol,
-      interval: "1day",
-      outputsize,
+      interval: settings.interval,
+      outputsize: settings.outputsize,
       apikey: apiKey,
       format: "JSON"
     });
