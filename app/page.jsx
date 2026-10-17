@@ -29,6 +29,10 @@ export default function Home() {
   const [period,setPeriod] = useState("1M");
   const [selected,setSelected] = useState("EUR/BRL");
   const [search,setSearch] = useState("");
+  const [favorites,setFavorites] = useState([]);
+  const [favoriteReady,setFavoriteReady] = useState(false);
+  const [sortCrypto,setSortCrypto] = useState("rank");
+  const [selectedCoin,setSelectedCoin] = useState(null);
   const [rates,setRates] = useState({});
   const [history,setHistory] = useState({});
   const [crypto,setCrypto] = useState([]);
@@ -39,7 +43,15 @@ export default function Home() {
   const [lastUpdated,setLastUpdated] = useState(null);
   const [loading,setLoading] = useState(true);
   const [clockNow,setClockNow] = useState(new Date());
-  const filtered = useMemo(() => assets.filter(a => (a.name+" "+a.symbol).toLowerCase().includes(search.toLowerCase())),[search]);
+  const filtered = useMemo(() => assets.filter(a => (a.name+" "+a.symbol).toLowerCase().includes(search.toLowerCase()) && (active !== "Favoritos" || favorites.includes(a.symbol))),[search,active,favorites]);
+  const sortedCrypto = useMemo(() => [...crypto].sort((a,b) => sortCrypto === "price" ? b.price-a.price : sortCrypto === "change" ? b.change24h-a.change24h : a.rank-b.rank),[crypto,sortCrypto]);
+
+  useEffect(() => {
+    try { setFavorites(JSON.parse(localStorage.getItem("de-olho-favorites") || "[]")); } catch { setFavorites([]); }
+    setFavoriteReady(true);
+  }, []);
+  useEffect(() => { if (favoriteReady) localStorage.setItem("de-olho-favorites", JSON.stringify(favorites)); }, [favorites,favoriteReady]);
+  const toggleFavorite = (symbol) => setFavorites(current => current.includes(symbol) ? current.filter(x => x !== symbol) : [...current, symbol]);
   const cryptoById = useMemo(() => Object.fromEntries(crypto.map(c => [c.id,c])),[crypto]);
 
   const loadRates = useCallback(async () => {
@@ -92,7 +104,7 @@ export default function Home() {
     let cancelled = false;
     async function loadHistory() {
       try {
-        const res = await fetch("/api/forex?symbol=" + encodeURIComponent(selected) + "&history=true", { cache: "no-store" });
+        const res = await fetch("/api/forex?symbol=" + encodeURIComponent(selected) + "&history=true&period=" + encodeURIComponent(period), { cache: "no-store" });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Histórico indisponível.");
         if (!cancelled) setHistory(prev => ({ ...prev, [selected]: data.values || [] }));
@@ -102,7 +114,7 @@ export default function Home() {
     }
     loadHistory();
     return () => { cancelled = true; };
-  }, [selected]);
+  }, [selected,period]);
 
   const chartValues = history[selected] || [];
   const chartPath = useMemo(() => {
@@ -134,30 +146,40 @@ export default function Home() {
           <div className="heroTag"><span className="pulse"/> RADAR GLOBAL <small>O mundo em movimento</small></div>
         </section>
 
+        {active === "Mercados" && <section className="panel marketDashboard"><div className="panelHead"><div><h3>Mercados globais</h3><p>Estado das fontes de dados disponíveis</p></div><span className="updated">● Transparência de dados</span></div><div className="marketTiles"><div><b>Câmbio</b><strong>Ligado</strong><small>Twelve Data · EUR/USD, EUR/BRL e USD/BRL</small></div><div><b>Criptomoedas</b><strong>Ligado</strong><small>CoinGecko · seis ativos em USD</small></div><div><b>Índices e ações</b><strong className="marketUnavailable">Fonte não ligada</strong><small>Não mostramos preços fictícios. Esta categoria ficará disponível quando houver uma fonte real.</small></div></div></section>}
+
+        {active === "Favoritos" && <section className="panel favoritesIntro"><div className="panelHead"><div><h3>Os teus favoritos</h3><p>Guarda ativos nesta lista; a seleção fica neste navegador.</p></div><span className="updated">{favorites.length} ativos guardados</span></div>{favorites.length===0 && <p className="cryptoEmpty">Ainda não tens favoritos. Usa o botão ☆ na lista de acompanhamento para guardar um ativo.</p>}</section>}
+
         {active === "Criptomoedas" && <section className="panel cryptoDashboard">
           <div className="panelHead cryptoHeader"><div><h3>Mercado de criptomoedas</h3><p>Preços em USD · variação nas últimas 24 horas</p></div><span className="updated">{cryptoUpdated ? "● Atualizado às "+cryptoUpdated.toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"}) : "○ A obter dados"}</span></div>
           {cryptoError && <div className="cryptoNotice">{cryptoError}</div>}
-          {cryptoLoading && crypto.length===0 ? <p className="cryptoEmpty">A carregar cotações das criptomoedas…</p> : <div className="cryptoTable"><div className="cryptoRow cryptoTableHead"><span># / Ativo</span><span>Preço (USD)</span><span>24 horas</span><span>Capitalização</span></div>
-            {crypto.map((coin,index)=><div className="cryptoRow" key={coin.id}><span className="cryptoName"><b>{coin.rank || index+1}</b>{coin.image ? <img src={coin.image} alt="" /> : <i>{coin.symbol.slice(0,1)}</i>}<span><strong>{coin.name}</strong><small>{coin.symbol}</small></span></span><b>{usd(coin.price)}</b><span className={coin.change24h>=0?"gain":"loss"}>{coin.change24h>=0?"+":""}{coin.change24h.toFixed(2)}%</span><span className="marketCap">{usd(coin.marketCap)}</span></div>)}
+          {cryptoLoading && crypto.length===0 ? <p className="cryptoEmpty">A carregar cotações das criptomoedas…</p> : <div className="cryptoControls"><label>Ordenar por <select value={sortCrypto} onChange={e=>setSortCrypto(e.target.value)}><option value="rank">Capitalização</option><option value="price">Preço</option><option value="change">Variação 24h</option></select></label><input className="search" placeholder="Pesquisar criptomoeda…" value={search} onChange={e=>setSearch(e.target.value)}/></div><div className="cryptoTable"><div className="cryptoRow cryptoTableHead"><span># / Ativo</span><span>Preço (USD)</span><span>24 horas</span><span>Capitalização</span></div>
+            {sortedCrypto.filter(c=>(c.name+" "+c.symbol).toLowerCase().includes(search.toLowerCase())).map((coin,index)=><button className="cryptoRow cryptoRowButton" key={coin.id} onClick={()=>setSelectedCoin(coin)} aria-label={"Ver detalhes de "+coin.name}><span className="cryptoName"><b>{coin.rank || index+1}</b>{coin.image ? <img src={coin.image} alt="" /> : <i>{coin.symbol.slice(0,1)}</i>}<span><strong>{coin.name}</strong><small>{coin.symbol}</small></span><span className="favoriteStar" onClick={e=>{e.stopPropagation();toggleFavorite(coin.symbol)}}>{favorites.includes(coin.symbol)?"★":"☆"}</span></span><b>{usd(coin.price)}</b><span className={coin.change24h>=0?"gain":"loss"}>{coin.change24h>=0?"+":""}{coin.change24h.toFixed(2)}%</span><span className="marketCap">{usd(coin.marketCap)}</span></button>)}
           </div>}
           <div className="cryptoFoot">Fonte: CoinGecko · atualização automática aproximada a cada minuto. Os limites da fonte podem afetar a frequência.</div>
         </section>}
 
-        <div className="sectionTitle"><div><h2>{active === "Criptomoedas" ? "Mercados em destaque" : "Em destaque"}</h2><p>{active === "Criptomoedas" ? "Resumo das cotações cambiais." : "Uma visão rápida dos principais pares cambiais."}</p></div><span className="updated">{lastUpdated ? "● Atualizado às "+lastUpdated.toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"}) : "○ A obter dados"}</span></div>
+        {active !== "Mercados" && <div className="sectionTitle"><div><h2>{active === "Criptomoedas" ? "Câmbio em destaque" : active === "Favoritos" ? "Cotações dos teus favoritos" : "Em destaque"}</h2><p>{active === "Criptomoedas" ? "Resumo das cotações cambiais." : "Uma visão rápida dos principais pares cambiais."}</p></div><span className="updated">{lastUpdated ? "● Atualizado às "+lastUpdated.toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"}) : "○ A obter dados"}</span></div>}
+        {active !== "Mercados" && active !== "Favoritos" && error && <div className="notice"><span>!</span><div><b>Não foi possível atualizar as cotações</b><p>{error}</p></div></div>}
+        {selectedCoin && <div className="coinModalBackdrop" onClick={()=>setSelectedCoin(null)}><section className="panel coinModal" onClick={e=>e.stopPropagation()}><button className="modalClose" onClick={()=>setSelectedCoin(null)} aria-label="Fechar detalhes">×</button><div className="cryptoName">{selectedCoin.image && <img src={selectedCoin.image} alt=""/>}<span><strong>{selectedCoin.name} ({selectedCoin.symbol})</strong><small>Dados de mercado · CoinGecko</small></span></div><h2>{usd(selectedCoin.price)}</h2><p>Variação 24 horas: <b className={selectedCoin.change24h>=0?"gain":"loss"}>{selectedCoin.change24h>=0?"+":""}{selectedCoin.change24h.toFixed(2)}%</b></p><p>Capitalização: {usd(selectedCoin.marketCap)}</p><p>Volume 24h: {usd(selectedCoin.volume24h)}</p><button className="primaryButton" onClick={()=>toggleFavorite(selectedCoin.symbol)}>{favorites.includes(selectedCoin.symbol)?"Remover dos favoritos":"Adicionar aos favoritos"}</button></section></div>}
+        {active !== "Mercados" && active !== "Favoritos" && error && <div className="notice"><span>!</span><div><b>Não foi possível atualizar as cotações</b><p>{error}</p></div></div>}
         {error && <div className="notice"><span>!</span><div><b>Não foi possível atualizar as cotações</b><p>{error}</p></div></div>}
         <div className="stats">
           {pairs.filter(p=>p.symbol!=="EUR/USD").map(p=><article className="stat" key={p.symbol}><div className="statHead"><span>{p.label}<small className="pairLabel">{p.detail}</small></span><span className={"coin "+p.tone}>{p.icon}</span></div><div className="value">{rates[p.symbol] ? money(rates[p.symbol]) : "—"}</div><div className="statBottom"><span className="pending">{rates[p.symbol] ? "Twelve Data" : loading ? "A carregar…" : "Sem cotação"}</span><span className="sparkline" aria-hidden="true">⌁⌁⌁⌁⌁</span></div></article>)}
           <article className="stat"><div className="statHead"><span>EURO <small className="pairLabel">EUR / USD</small></span><span className="coin blue">€</span></div><div className="value">{rates["EUR/USD"] ? money(rates["EUR/USD"]) : "—"}</div><div className="statBottom"><span className="pending">{rates["EUR/USD"] ? "Twelve Data" : loading ? "A carregar…" : "Sem cotação"}</span><span className="sparkline">⌁⌁⌁⌁⌁</span></div></article>
         </div>
-        <div className="columns">
+        {active !== "Mercados" && <div className="columns">
           <article className="panel"><div className="panelHead"><div><h3>Movimento cambial</h3><p>Histórico diário · fonte Twelve Data</p></div><select aria-label="Indicador" value={selected} onChange={e=>setSelected(e.target.value)}>{pairs.map(p=><option key={p.symbol}>{p.symbol}</option>)}</select></div>
             <div className="chart"><div className="gridLines"><i/><i/><i/><i/></div><svg viewBox="0 0 650 180" preserveAspectRatio="none" aria-label="Histórico cambial"><defs><linearGradient id="fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#159dff" stopOpacity=".3"/><stop offset="100%" stopColor="#159dff" stopOpacity="0"/></linearGradient></defs>{chartPath && <><path d={chartPath+" L650 180 L0 180Z"} fill="url(#fill)"/><path d={chartPath} fill="none" stroke="#159dff" strokeWidth="3"/></>}</svg>{chartValues.length < 2 && <div className="chartMessage">{error || "A carregar histórico…"}<br/><b>Histórico de referência</b></div>}</div>
             <div className="chartFooter"><span>{chartValues.length ? `${chartValues.length} observações · ${chartValues[0]?.date} a ${chartValues[chartValues.length-1]?.date}` : "Histórico diário"}</span><div className="period">{["1D","1S","1M","3M","1A"].map(p=><button key={p} className={period===p?"chosen":""} onClick={()=>setPeriod(p)}>{p}</button>)}</div></div>
           </article>
-          <article className="panel watch"><div className="panelHead"><div><h3>{active === "Criptomoedas" ? "Acompanhar cripto" : "Lista de acompanhamento"}</h3><p>Ativos para acompanhar mais tarde</p></div><button className="add" onClick={()=>setActive("Favoritos")} aria-label="Adicionar favorito">＋</button></div><input className="search" placeholder="Pesquisar ativos..." value={search} onChange={e=>setSearch(e.target.value)}/><div className="assetList">{filtered.map(a=>{const coin=cryptoById[a.id];return <div className="asset" key={a.symbol}><span className={"assetIcon "+a.tone}>{a.icon}</span><div><b>{a.name}</b><small>{a.symbol}</small></div><div className="assetValue"><b>{coin?usd(coin.price):a.type==="Cripto"?(cryptoLoading?"A carregar…":"Indisponível"):"—"}</b><small>{coin? <span className={coin.change24h>=0?"gain":"loss"}>{coin.change24h>=0?"+":""}{coin.change24h.toFixed(2)}%</span> : a.type==="Cripto"?"CoinGecko":"Fonte por ligar"}</small></div></div>})}{filtered.length===0&&<p className="empty">Nenhum ativo encontrado.</p>}</div><button className="viewAll" onClick={()=>setActive("Criptomoedas")}>Ver painel de criptomoedas →</button></article>
-        </div>
+          <article className="panel watch"><div className="panelHead"><div><h3>{active === "Criptomoedas" ? "Acompanhar cripto" : "Lista de acompanhamento"}</h3><p>Ativos para acompanhar mais tarde</p></div><button className="add" onClick={()=>setActive(active==="Favoritos"?"Visão geral":"Favoritos")} aria-label="Abrir favoritos">☆</button></div><input className="search" placeholder="Pesquisar ativos..." value={search} onChange={e=>setSearch(e.target.value)}/><div className="assetList">{filtered.map(a=>{const coin=cryptoById[a.id];return <div className="asset" key={a.symbol}><span className={"assetIcon "+a.tone}>{a.icon}</span><div><b>{a.name}</b><small>{a.symbol}</small></div><div className="assetValue"><b>{coin?usd(coin.price):a.type==="Cripto"?(cryptoLoading?"A carregar…":"Indisponível"):"—"}</b><small>{coin? <span className={coin.change24h>=0?"gain":"loss"}>{coin.change24h>=0?"+":""}{coin.change24h.toFixed(2)}%</span> : a.type==="Cripto"?"CoinGecko":"Fonte por ligar"}</small></div><button className="favoriteToggle" onClick={()=>toggleFavorite(a.symbol)} aria-label={(favorites.includes(a.symbol)?"Remover ":"Adicionar ")+a.name+" dos favoritos"}>{favorites.includes(a.symbol)?"★":"☆"}</button></div>})}{filtered.length===0&&<p className="empty">Nenhum ativo encontrado.</p>}</div><button className="viewAll" onClick={()=>setActive(active==="Favoritos"?"Visão geral":"Criptomoedas")}>{active==="Favoritos"?"Voltar ao painel →":"Ver painel de criptomoedas →"}</button></article>
+        </div>}
+        {active !== "Mercados" && active !== "Favoritos" && <div className="sectionTitle lower"><div><h2>Explora o mercado</h2><p>Escolhe o que queres acompanhar.</p></div></div>}
+        {active !== "Mercados" && active !== "Favoritos" && <div className="quick">
         <div className="sectionTitle lower"><div><h2>Explora o mercado</h2><p>Escolhe o que queres acompanhar.</p></div></div>
         <div className="quick">{[["⇄","Câmbio","Euro, dólar e real","Câmbio"],["₿","Criptomoedas","BTC, ETH, SOL e mais","Criptomoedas"],["▥","Mercados globais","Índices e ações","Mercados"]].map(x=><button key={x[1]} onClick={()=>setActive(x[3])}><span>{x[0]}</span><div><b>{x[1]}</b><small>{x[2]}</small></div><strong>↗</strong></button>)}</div>
+        </div>}
         <footer>DE OLHO NO MUNDO · Cotações indicativas, não aconselhamento financeiro. Câmbio: Twelve Data · Cripto: CoinGecko.</footer>
       </div>
     </section>
