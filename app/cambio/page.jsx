@@ -72,7 +72,6 @@ export default function CurrencyConverterPage() {
     ? numericAmount * exchangeRate
     : null;
   const sourceDate = rateDates[from + "/" + to] || rateDates[to + "/" + from] || rateDates["EUR/" + to] || rateDates["EUR/" + from];
-  const fromCurrency = currencies.find(currency => currency.code === from);
   const toCurrency = currencies.find(currency => currency.code === to);
 
   function swapCurrencies() {
