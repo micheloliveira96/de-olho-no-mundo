@@ -13,8 +13,7 @@ const assets = [
   {name:"Solana",symbol:"SOL",type:"Cripto",icon:"≋",tone:"green",id:"solana"},
   {name:"BNB",symbol:"BNB",type:"Cripto",icon:"◆",tone:"orange",id:"binancecoin"},
   {name:"XRP",symbol:"XRP",type:"Cripto",icon:"✕",tone:"blue",id:"ripple"},
-  {name:"Dogecoin",symbol:"DOGE",type:"Cripto",icon:"Ð",tone:"orange",id:"dogecoin"},
-  {name:"S&P 500",symbol:"SPX",type:"Índice",icon:"S",tone:"orange"}
+  {name:"Dogecoin",symbol:"DOGE",type:"Cripto",icon:"Ð",tone:"orange",id:"dogecoin"}
 ];
 const money = (n) => n == null || !Number.isFinite(Number(n)) ? "N/D" : new Intl.NumberFormat("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 4 }).format(n);
 const usd = (n) => n == null || !Number.isFinite(Number(n)) ? "N/D" : new Intl.NumberFormat("en-US", { style:"currency", currency:"USD", maximumFractionDigits:n < 1 ? 6 : 2 }).format(n);
@@ -156,7 +155,7 @@ export default function Home() {
 
         {active === "Câmbio" && <section className="panel marketDashboard"><div className="panelHead"><div><h3>Painel de câmbio</h3><p>Cotações e histórico disponibilizados pela Twelve Data</p></div><button className="retryButton" onClick={()=>{setLoading(true);loadRates();}} disabled={loading}>{loading ? "A atualizar…" : "↻ Atualizar cotações"}</button></div><div className="marketTiles"><div><b>EUR / USD</b><strong>{rates["EUR/USD"] ? money(rates["EUR/USD"]) : "Indisponível"}</strong><small>{rateDates["EUR/USD"] || "Sem data de cotação"} · Twelve Data</small></div><div><b>EUR / BRL</b><strong>{rates["EUR/BRL"] ? money(rates["EUR/BRL"]) : "Indisponível"}</strong><small>{rateDates["EUR/BRL"] || "Sem data de cotação"} · Twelve Data</small></div><div><b>USD / BRL</b><strong>{rates["USD/BRL"] ? money(rates["USD/BRL"]) : "Indisponível"}</strong><small>{rateDates["USD/BRL"] || "Sem data de cotação"} · Twelve Data</small></div></div></section>}
 
-        {active === "Mercados" && <section className="panel marketDashboard"><div className="panelHead"><div><h3>Mercados globais</h3><p>Estado das fontes de dados disponíveis</p></div><span className="updated">● Transparência de dados</span></div><div className="marketTiles"><button onClick={()=>openSection("Câmbio")}><b>Câmbio</b><strong>Ver cotações</strong><small>Twelve Data · EUR/USD, EUR/BRL e USD/BRL</small></button><button onClick={()=>openSection("Criptomoedas")}><b>Criptomoedas</b><strong>Ver ativos</strong><small>CoinGecko · seis ativos em USD</small></button><div><b>Índices e ações</b><strong className="marketUnavailable">Fonte não ligada</strong><small>Não mostramos preços fictícios. Esta categoria ficará disponível quando houver uma fonte real.</small></div></div></section>}
+        {active === "Mercados" && <section className="panel marketDashboard"><div className="panelHead"><div><h3>Mercados globais</h3><p>Estado das fontes de dados disponíveis</p></div><span className="updated">● Transparência de dados</span></div><div className="marketTiles"><button onClick={()=>openSection("Câmbio")}><b>Câmbio</b><strong>Ver cotações</strong><small>Twelve Data · EUR/USD, EUR/BRL e USD/BRL</small></button><button onClick={()=>openSection("Criptomoedas")}><b>Criptomoedas</b><strong>Ver ativos</strong><small>CoinGecko · seis ativos em USD</small></button></div></section>}
 
         {active === "Favoritos" && <section className="panel favoritesIntro"><div className="panelHead"><div><h3>Os teus favoritos</h3><p>Guarda ativos nesta lista; a seleção fica neste navegador.</p></div><span className="updated">{favorites.length} ativos guardados</span></div>{favorites.length===0 && <p className="cryptoEmpty">Ainda não tens favoritos. Usa o botão ☆ na lista de acompanhamento para guardar um ativo.</p>}</section>}
 
