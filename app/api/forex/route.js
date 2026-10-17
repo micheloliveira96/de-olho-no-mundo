@@ -35,8 +35,11 @@ export async function GET(request) {
       apikey: apiKey,
       format: "JSON"
     });
+    // Cachear a resposta da Twelve Data na cache partilhada da Next/Vercel.
+    // Sem isto, o painel + calculadora + gráfico gastam créditos repetidos
+    // sempre que o utilizador abre ou atualiza a página.
     const response = await fetch(`${API_BASE}/time_series?${params.toString()}`, {
-      cache: "no-store",
+      next: { revalidate: history ? 3600 : 300 },
       headers: { Accept: "application/json" }
     });
     const data = await response.json();
@@ -61,7 +64,7 @@ export async function GET(request) {
         rateDate: values.at(-1).date,
         updatedAt: new Date().toISOString(),
         updateFrequency: "conforme disponibilidade e plano da Twelve Data"
-      }, { headers: { "Cache-Control": "no-store" } });
+      }, { headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400" } });
     }
 
     const latest = values.at(-1);
@@ -72,7 +75,7 @@ export async function GET(request) {
       source: "Twelve Data",
       updatedAt: new Date().toISOString(),
       updateFrequency: "conforme disponibilidade e plano da Twelve Data"
-    }, { headers: { "Cache-Control": "no-store" } });
+    }, { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=1800" } });
   } catch (error) {
     return NextResponse.json(
       { error: error.message || "Não foi possível consultar as cotações neste momento." },
