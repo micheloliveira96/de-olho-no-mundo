@@ -42,10 +42,10 @@ export async function GET() {
       symbol: coin.symbol.toUpperCase(),
       image: coin.image,
       price: Number(coin.current_price),
-      change24h: Number(coin.price_change_percentage_24h ?? 0),
-      marketCap: Number(coin.market_cap ?? 0),
-      volume24h: Number(coin.total_volume ?? 0),
-      rank: Number(coin.market_cap_rank ?? 0)
+      change24h: coin.price_change_percentage_24h == null || !Number.isFinite(Number(coin.price_change_percentage_24h)) ? null : Number(coin.price_change_percentage_24h),
+      marketCap: coin.market_cap == null || !Number.isFinite(Number(coin.market_cap)) ? null : Number(coin.market_cap),
+      volume24h: coin.total_volume == null || !Number.isFinite(Number(coin.total_volume)) ? null : Number(coin.total_volume),
+      rank: coin.market_cap_rank == null || !Number.isFinite(Number(coin.market_cap_rank)) ? null : Number(coin.market_cap_rank)
     })).filter((coin) => Number.isFinite(coin.price));
 
     return NextResponse.json({
