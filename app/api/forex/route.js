@@ -1,22 +1,8 @@
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
-const API_BASE = "https://api.frankfurter.dev/v2";
 
-async function fetchJson(url) {
-  const response = await fetch(url, { cache: "no-store", headers: { Accept: "application/json" } });
-  if (!response.ok) throw new Error("A fonte gratuita de câmbio não respondeu.");
-  return response.json();
-}
-
-function mapRates(rows) {
-  const byDate = new Map();
-  for (const row of rows) {
-    if (!byDate.has(row.date)) byDate.set(row.date, {});
-    byDate.get(row.date)[row.quote] = Number(row.rate);
-  }
-  return byDate;
-}
+const API_BASE = "https://api.twelvedata.com";
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
@@ -26,46 +12,60 @@ export async function GET(request) {
     return NextResponse.json({ error: "Par de moedas não permitido." }, { status: 400 });
   }
 
+  const apiKey = process.env.TWELVE_DATA_API_KEY;
+  if (!apiKey) {
+    return NextResponse.json(
+      { error: "Falta configurar TWELVE_DATA_API_KEY nas variáveis de ambiente da Vercel." },
+      { status: 503 }
+    );
+  }
+
   try {
     const history = searchParams.get("history") === "true";
-    const start = new Date();
-    start.setUTCDate(start.getUTCDate() - 45);
-    const from = start.toISOString().slice(0, 10);
-    const url = history
-      ? `${API_BASE}/rates?from=${from}&quotes=USD,BRL`
-      : `${API_BASE}/rates?quotes=USD,BRL`;
-    const rows = await fetchJson(url);
-    const byDate = mapRates(rows);
-    const values = [...byDate.entries()]
-      .map(([date, rates]) => {
-        let rate;
-        if (symbol === "EUR/BRL") rate = rates.BRL;
-        else if (symbol === "EUR/USD") rate = rates.USD;
-        else if (rates.BRL && rates.USD) rate = rates.BRL / rates.USD;
-        return { date, rate };
-      })
+    const params = new URLSearchParams({
+      symbol,
+      interval: "1day",
+      outputsize: history ? "45" : "1",
+      apikey: apiKey,
+      format: "JSON"
+    });
+    const response = await fetch(`${API_BASE}/time_series?${params.toString()}`, {
+      cache: "no-store",
+      headers: { Accept: "application/json" }
+    });
+    const data = await response.json();
+
+    if (!response.ok || data.status === "error" || data.code || !Array.isArray(data.values)) {
+      const message = data.message || "A Twelve Data não conseguiu fornecer esta cotação.";
+      throw new Error(message);
+    }
+
+    const values = data.values
+      .map((item) => ({ date: item.datetime, rate: Number(item.close) }))
       .filter((item) => Number.isFinite(item.rate))
       .sort((a, b) => a.date.localeCompare(b.date));
+
+    if (!values.length) throw new Error("A Twelve Data não devolveu valores para este par.");
 
     if (history) {
       return NextResponse.json({
         symbol,
         values,
-        source: "Frankfurter (taxas de referência de bancos centrais)",
+        source: "Twelve Data",
+        rateDate: values.at(-1).date,
         updatedAt: new Date().toISOString(),
-        updateFrequency: "dias úteis"
+        updateFrequency: "conforme disponibilidade e plano da Twelve Data"
       }, { headers: { "Cache-Control": "no-store" } });
     }
 
     const latest = values.at(-1);
-    if (!latest) throw new Error("Ainda não há uma cotação disponível para este par.");
     return NextResponse.json({
       symbol,
       rate: latest.rate,
       rateDate: latest.date,
-      source: "Frankfurter (taxas de referência de bancos centrais)",
+      source: "Twelve Data",
       updatedAt: new Date().toISOString(),
-      updateFrequency: "dias úteis"
+      updateFrequency: "conforme disponibilidade e plano da Twelve Data"
     }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     return NextResponse.json(
