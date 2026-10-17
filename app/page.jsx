@@ -174,11 +174,10 @@ export default function Home() {
           </article>
           <article className="panel watch"><div className="panelHead"><div><h3>{active === "Criptomoedas" ? "Acompanhar cripto" : "Lista de acompanhamento"}</h3><p>Ativos para acompanhar mais tarde</p></div><button className="add" onClick={()=>setActive(active==="Favoritos"?"Visão geral":"Favoritos")} aria-label="Abrir favoritos">☆</button></div><input className="search" placeholder="Pesquisar ativos..." value={search} onChange={e=>setSearch(e.target.value)}/><div className="assetList">{filtered.map(a=>{const coin=cryptoById[a.id];return <div className="asset" key={a.symbol}><span className={"assetIcon "+a.tone}>{a.icon}</span><div><b>{a.name}</b><small>{a.symbol}</small></div><div className="assetValue"><b>{coin?usd(coin.price):a.type==="Cripto"?(cryptoLoading?"A carregar…":"Indisponível"):"—"}</b><small>{coin? <span className={coin.change24h>=0?"gain":"loss"}>{coin.change24h>=0?"+":""}{coin.change24h.toFixed(2)}%</span> : a.type==="Cripto"?"CoinGecko":"Fonte por ligar"}</small></div><button className="favoriteToggle" onClick={()=>toggleFavorite(a.symbol)} aria-label={(favorites.includes(a.symbol)?"Remover ":"Adicionar ")+a.name+" dos favoritos"}>{favorites.includes(a.symbol)?"★":"☆"}</button></div>})}{filtered.length===0&&<p className="empty">Nenhum ativo encontrado.</p>}</div><button className="viewAll" onClick={()=>setActive(active==="Favoritos"?"Visão geral":"Criptomoedas")}>{active==="Favoritos"?"Voltar ao painel →":"Ver painel de criptomoedas →"}</button></article>
         </div>}
-        {active !== "Mercados" && active !== "Favoritos" && <div className="sectionTitle lower"><div><h2>Explora o mercado</h2><p>Escolhe o que queres acompanhar.</p></div></div>}
-        {active !== "Mercados" && active !== "Favoritos" && <div className="quick">
-        <div className="sectionTitle lower"><div><h2>Explora o mercado</h2><p>Escolhe o que queres acompanhar.</p></div></div>
-        <div className="quick">{[["⇄","Câmbio","Euro, dólar e real","Câmbio"],["₿","Criptomoedas","BTC, ETH, SOL e mais","Criptomoedas"],["▥","Mercados globais","Índices e ações","Mercados"]].map(x=><button key={x[1]} onClick={()=>setActive(x[3])}><span>{x[0]}</span><div><b>{x[1]}</b><small>{x[2]}</small></div><strong>↗</strong></button>)}</div>
-        </div>}
+        {active !== "Mercados" && active !== "Favoritos" && <>
+          <div className="sectionTitle lower"><div><h2>Explora o mercado</h2><p>Escolhe o que queres acompanhar.</p></div></div>
+          <div className="quick">{[["⇄","Câmbio","Euro, dólar e real","Câmbio"],["₿","Criptomoedas","BTC, ETH, SOL e mais","Criptomoedas"],["▥","Mercados globais","Índices e ações","Mercados"]].map(x=><button key={x[1]} onClick={()=>setActive(x[3])}><span>{x[0]}</span><div><b>{x[1]}</b><small>{x[2]}</small></div><strong>↗</strong></button>)}</div>
+        </>}
         <footer>DE OLHO NO MUNDO · Cotações indicativas, não aconselhamento financeiro. Câmbio: Twelve Data · Cripto: CoinGecko.</footer>
       </div>
     </section>
