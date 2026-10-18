@@ -38,7 +38,7 @@ export default function JavisIntegrations() {
   }
 
   function openWhatsApp() {
-    const phone = whatsappPhone.replace(/\\D/g, "");
+    const phone = whatsappPhone.replace(/\D/g, "");
     const url = "https://wa.me/" + phone + "?text=" + encodeURIComponent(whatsappMessage.trim());
     window.open(url, "_blank", "noopener,noreferrer");
     setWhatsappStatus("O WhatsApp foi aberto para reveres e enviares a mensagem.");
