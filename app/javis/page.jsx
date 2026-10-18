@@ -360,7 +360,7 @@ export default function JavisPage() {
         const transcript = event.results?.[0]?.[0]?.transcript?.trim();
         if (!transcript) return;
         const normalized = transcript.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-        const wakeMatch = normalized.match(/(?:^|\s)(?:(?:oi|ola|hey|ok|okay)\s+)?k\.?e\.?t\.?u\.?r\.?a\b/i);
+        const wakeMatch = normalized.match(/(?:^|\s)(?:(?:oi|ola|hey|ok|okay)[,.:;!?\s]+)?k\.?e\.?t\.?u\.?r\.?a\b/i);
         if (wakeMatch) {
           const command = normalized.slice(wakeMatch.index + wakeMatch[0].length).trim().replace(/^[,.:;!?\s]+/, "");
           if (command) {
