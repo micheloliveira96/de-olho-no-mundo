@@ -117,9 +117,7 @@ export default function JavisPage() {
       const data = await response.json();
       if (!response.ok) {
         setErrorMessage(data.error || "Não foi possível pesquisar músicas.");
-        if (data.searchUrl) setErrorMessage((data.error || "") + " Podes abrir a pesquisa no YouTube.");
         addMessage("assistant", data.error || "Não consegui pesquisar essa música.");
-        if (data.searchUrl) window.open(data.searchUrl, "_blank", "noopener,noreferrer");
         return;
       }
       setMusicResults(data.items || []);
