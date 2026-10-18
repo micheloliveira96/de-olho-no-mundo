@@ -171,11 +171,12 @@ export default function JavisPage() {
 
   const processMessage = useCallback(async (rawText, selectedAttachments = []) => {
     const text = rawText.trim();
-    if (!text || busy) return;
+    if ((!text && !selectedAttachments.length) || busy) return;
+    const messageText = text || "Analisa os ficheiros que anexei e explica o que consegues identificar.";
     setInput("");
     setErrorMessage("");
     const attachmentLabels = selectedAttachments.map((file) => file.name).filter(Boolean);
-    const userDisplayText = attachmentLabels.length ? text + "\\n\\nAnexos: " + attachmentLabels.join(", ") : text;
+    const userDisplayText = attachmentLabels.length ? messageText + "\\n\\nAnexos: " + attachmentLabels.join(", ") : messageText;
     const current = [...messagesRef.current, { role: "user", content: userDisplayText }];
     setMessages(current);
     setAttachments([]);
@@ -214,11 +215,11 @@ export default function JavisPage() {
               role: "user",
               content: selectedAttachments.some((file) => file.dataUrl && file.type.startsWith("image/"))
                 ? [
-                    { type: "text", text: text + (selectedAttachments.length ? "\\nAnexos: " + selectedAttachments.map((file) => file.name).join(", ") : "") },
+                    { type: "text", text: messageText + (selectedAttachments.length ? "\\nAnexos: " + selectedAttachments.map((file) => file.name).join(", ") : "") },
                     ...selectedAttachments.filter((file) => file.dataUrl && file.type.startsWith("image/")).map((file) => ({ type: "image_url", image_url: { url: file.dataUrl } })),
                     ...selectedAttachments.filter((file) => file.textContent).map((file) => ({ type: "text", text: "\\nConteúdo do ficheiro " + file.name + ":\\n" + file.textContent.slice(0, 12000) }))
                   ]
-                : text + selectedAttachments.map((file) => file.textContent ? "\\n\\nConteúdo do ficheiro " + file.name + ":\\n" + file.textContent.slice(0, 12000) : "\\nFicheiro anexado: " + file.name + " (" + file.type + "). Este formato foi anexado, mas o conteúdo não está disponível para leitura nesta versão.").join("")
+                : messageText + selectedAttachments.map((file) => file.textContent ? "\\n\\nConteúdo do ficheiro " + file.name + ":\\n" + file.textContent.slice(0, 12000) : "\\nFicheiro anexado: " + file.name + " (" + file.type + "). Este formato foi anexado, mas o conteúdo não está disponível para leitura nesta versão.").join("")
             }
           ]
         })
@@ -248,8 +249,8 @@ export default function JavisPage() {
     const selected = Array.from(fileList || []).slice(0, 5);
     const prepared = [];
     for (const file of selected) {
-      if (file.size > 8 * 1024 * 1024) {
-        setErrorMessage("Cada ficheiro deve ter no máximo 8 MB: " + file.name);
+      if (file.size > 3 * 1024 * 1024) {
+        setErrorMessage("Cada ficheiro deve ter no máximo 3 MB: " + file.name);
         continue;
       }
       const item = { name: file.name, type: file.type || "application/octet-stream", size: file.size };
