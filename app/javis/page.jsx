@@ -535,7 +535,7 @@ export default function JavisPage() {
         <header className="javis-top">
           <div className="javis-brand">
             <div className="javis-orb" aria-hidden="true">✦</div>
-            <div><h1>J.A.R.V.I.S.</h1><p>ASSISTENTE PESSOAL · VOZ E IA</p></div>
+            <div><h1>K.E.T.U.R.A.</h1><p>ASSISTENTE PESSOAL · VOZ E IA</p></div>
           </div>
           <div className="javis-status">● {status.toUpperCase()}</div>
         </header>
