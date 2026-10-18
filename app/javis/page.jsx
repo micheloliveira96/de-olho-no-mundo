@@ -370,8 +370,9 @@ export default function JavisPage() {
             processMessage(command);
           } else {
             awaitingCommandRef.current = true;
+            processingVoiceRef.current = true;
             recognition.stop();
-            speak("Estou a ouvir. Diz o teu pedido.", () => startWakeListeningRef.current?.());
+            speak("Estou a ouvir. Diz o teu pedido.", () => { processingVoiceRef.current = false; startWakeListeningRef.current?.(); });
           }
         } else if (awaitingCommandRef.current) {
           awaitingCommandRef.current = false;
