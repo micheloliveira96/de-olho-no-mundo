@@ -261,7 +261,7 @@ export default function JavisPage() {
             reader.onerror = reject;
             reader.readAsDataURL(file);
           });
-        } else if (file.type.startsWith("text/") || /\\.(txt|md|csv|json|js|jsx|ts|tsx|html|css|xml|log)$/i.test(file.name)) {
+        } else if (file.type.startsWith("text/") || /\.(txt|md|csv|json|js|jsx|ts|tsx|html|css|xml|log)$/i.test(file.name)) {
           item.textContent = await file.text();
         }
       } catch {
@@ -335,10 +335,6 @@ export default function JavisPage() {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         stream.getTracks().forEach((track) => track.stop());
       }
-      if (navigator.mediaDevices?.getUserMedia) {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        stream.getTracks().forEach((track) => track.stop());
-      }
       recognitionRef.current?.abort();
       const recognition = new SpeechRecognition();
       recognition.lang = "pt-PT";
@@ -357,10 +353,10 @@ export default function JavisPage() {
           if (!event.results[i].isFinal) continue;
           const transcript = event.results[i][0]?.transcript?.trim();
           if (!transcript) continue;
-          const normalized = transcript.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase();
-          const wakeMatch = normalized.match(/\\b(?:oi|ola|hey|ok|okay)?\\s*jarvis\\b/);
+          const normalized = transcript.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+          const wakeMatch = normalized.match(/\b(?:oi|ola|hey|ok|okay)?\s*jarvis\b/);
           if (wakeMatch) {
-            const command = normalized.slice(wakeMatch.index + wakeMatch[0].length).trim().replace(/^[,.:;!?\\s]+/, "");
+            const command = normalized.slice(wakeMatch.index + wakeMatch[0].length).trim().replace(/^[,.:;!?\s]+/, "");
             if (command) {
               awaitingCommandRef.current = false;
               processMessage(command);
