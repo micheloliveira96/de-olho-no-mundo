@@ -69,6 +69,9 @@ export default function JavisPage() {
   const [busy, setBusy] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [wakeEnabled, setWakeEnabled] = useState(false);
+  const [attachments, setAttachments] = useState([]);
+  const imageInputRef = useRef(null);
+  const fileInputRef = useRef(null);
   const wakeModeRef = useRef(false);
   const awaitingCommandRef = useRef(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
@@ -166,13 +169,16 @@ export default function JavisPage() {
     }
   }, [addMessage]);
 
-  const processMessage = useCallback(async (rawText) => {
+  const processMessage = useCallback(async (rawText, selectedAttachments = []) => {
     const text = rawText.trim();
     if (!text || busy) return;
     setInput("");
     setErrorMessage("");
-    const current = [...messagesRef.current, { role: "user", content: text }];
+    const attachmentLabels = selectedAttachments.map((file) => file.name).filter(Boolean);
+    const userDisplayText = attachmentLabels.length ? text + "\\n\\nAnexos: " + attachmentLabels.join(", ") : text;
+    const current = [...messagesRef.current, { role: "user", content: userDisplayText }];
     setMessages(current);
+    setAttachments([]);
     setBusy(true);
     setStatus("A pensar…");
 
@@ -201,7 +207,21 @@ export default function JavisPage() {
       const response = await fetch("/api/javis/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: current.slice(-16).map(({ role, content }) => ({ role, content })) })
+        body: JSON.stringify({
+          messages: [
+            ...current.slice(-16, -1).map(({ role, content }) => ({ role, content })),
+            {
+              role: "user",
+              content: selectedAttachments.some((file) => file.dataUrl && file.type.startsWith("image/"))
+                ? [
+                    { type: "text", text: text + (selectedAttachments.length ? "\\nAnexos: " + selectedAttachments.map((file) => file.name).join(", ") : "") },
+                    ...selectedAttachments.filter((file) => file.dataUrl && file.type.startsWith("image/")).map((file) => ({ type: "image_url", image_url: { url: file.dataUrl } })),
+                    ...selectedAttachments.filter((file) => file.textContent).map((file) => ({ type: "text", text: "\\nConteúdo do ficheiro " + file.name + ":\\n" + file.textContent.slice(0, 12000) }))
+                  ]
+                : text + selectedAttachments.map((file) => file.textContent ? "\\n\\nConteúdo do ficheiro " + file.name + ":\\n" + file.textContent.slice(0, 12000) : "\\nFicheiro anexado: " + file.name + " (" + file.type + "). Este formato foi anexado, mas o conteúdo não está disponível para leitura nesta versão.").join("")
+            }
+          ]
+        })
       });
       const data = await response.json();
       if (!response.ok) {
@@ -224,7 +244,36 @@ export default function JavisPage() {
     }
   }, [addMessage, busy, playVideo, searchImages, searchMusic, speak]);
 
-  const startListening = useCallback(() => {
+  const addAttachments = useCallback(async (fileList) => {
+    const selected = Array.from(fileList || []).slice(0, 5);
+    const prepared = [];
+    for (const file of selected) {
+      if (file.size > 8 * 1024 * 1024) {
+        setErrorMessage("Cada ficheiro deve ter no máximo 8 MB: " + file.name);
+        continue;
+      }
+      const item = { name: file.name, type: file.type || "application/octet-stream", size: file.size };
+      try {
+        if (file.type.startsWith("image/")) {
+          item.dataUrl = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result));
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+        } else if (file.type.startsWith("text/") || /\\.(txt|md|csv|json|js|jsx|ts|tsx|html|css|xml|log)$/i.test(file.name)) {
+          item.textContent = await file.text();
+        }
+      } catch {
+        setErrorMessage("Não consegui ler o ficheiro " + file.name + ".");
+      }
+      prepared.push(item);
+    }
+    setAttachments((old) => [...old, ...prepared].slice(0, 5));
+    if (prepared.length) setErrorMessage("");
+  }, []);
+
+  const startListening = useCallback(async () => {
     if (typeof window === "undefined") return;
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -234,6 +283,10 @@ export default function JavisPage() {
       return;
     }
     try {
+      if (navigator.mediaDevices?.getUserMedia) {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach((track) => track.stop());
+      }
       if (recognitionRef.current) recognitionRef.current.abort();
       const recognition = new SpeechRecognition();
       recognition.lang = "pt-PT";
@@ -254,14 +307,14 @@ export default function JavisPage() {
       recognition.onend = () => { setIsListening(false); setStatus("Pronto"); };
       recognitionRef.current = recognition;
       recognition.start();
-    } catch {
+    } catch (error) {
       setIsListening(false);
       setStatus("Pronto");
-      setErrorMessage("Não consegui iniciar o microfone. Verifica as permissões do navegador.");
+      setErrorMessage(error?.name === "NotAllowedError" ? "O acesso ao microfone foi recusado. Permite-o nas definições do site e tenta novamente." : "Não consegui iniciar o microfone. Verifica as permissões do navegador e tenta novamente.");
     }
   }, [addMessage, processMessage]);
 
-  const toggleWakeWord = useCallback(() => {
+  const toggleWakeWord = useCallback(async () => {
     if (wakeModeRef.current) {
       wakeModeRef.current = false;
       awaitingCommandRef.current = false;
@@ -278,6 +331,14 @@ export default function JavisPage() {
       return;
     }
     try {
+      if (navigator.mediaDevices?.getUserMedia) {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach((track) => track.stop());
+      }
+      if (navigator.mediaDevices?.getUserMedia) {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach((track) => track.stop());
+      }
       recognitionRef.current?.abort();
       const recognition = new SpeechRecognition();
       recognition.lang = "pt-PT";
@@ -352,7 +413,7 @@ export default function JavisPage() {
 
   function submitMessage(event) {
     event.preventDefault();
-    processMessage(input);
+    processMessage(input, attachments);
   }
 
   async function submitMusicSearch(event) {
@@ -394,7 +455,7 @@ export default function JavisPage() {
         .javis-msg { max-width:92%; padding:12px 14px; border-radius:13px; font-size:14px; line-height:1.65; white-space:pre-wrap; overflow-wrap:anywhere; }
         .javis-msg.assistant { align-self:flex-start; background:#092328; border:1px solid #155158; color:#d9ffff; border-top-left-radius:4px; }
         .javis-msg.user { align-self:flex-end; background:linear-gradient(135deg,#075e64,#087f82); border:1px solid #0b9b9d; color:#efffff; border-top-right-radius:4px; }
-        .javis-chat-form { display:flex; gap:9px; padding:15px; border-top:1px solid #12434a; }
+        .javis-chat-form { display:flex; align-items:center; gap:8px; padding:15px; border-top:1px solid #12434a; }\n        .javis-icon-btn { flex:0 0 42px; height:42px; border:1px solid #1b555b; border-radius:11px; background:#071a1f; color:#a9e9e6; font-size:20px; }\n        .javis-attachments { display:flex; gap:8px; flex-wrap:wrap; padding:0 15px 12px; }\n        .javis-attachment { display:flex; align-items:center; gap:7px; max-width:220px; padding:5px 8px; border:1px solid #1b555b; border-radius:9px; background:#071a1f; color:#bce9e6; font-size:11px; }\n        .javis-attachment img { width:28px; height:28px; object-fit:cover; border-radius:5px; }\n        .javis-attachment span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }\n        .javis-attachment button { border:0; background:transparent; color:#ffaaaa; font-size:18px; }
         .javis-input { width:100%; min-width:0; color:#edffff; background:#020d11; border:1px solid #1b555b; border-radius:11px; padding:12px 13px; outline:none; }
         .javis-input:focus { border-color:#27f1e8; box-shadow:0 0 0 3px #22d3ee18; }
         .javis-btn { border:1px solid #12c9c4; background:linear-gradient(135deg,#087e80,#07565e); color:#efffff; border-radius:11px; padding:11px 14px; font-weight:650; white-space:nowrap; box-shadow:0 0 16px #00c8c018; }
@@ -450,8 +511,17 @@ export default function JavisPage() {
             {errorMessage && <div className="javis-error">{errorMessage}</div>}
             <form className="javis-chat-form" onSubmit={submitMessage}>
               <input ref={inputRef} className="javis-input" value={input} onChange={(event) => setInput(event.target.value)} placeholder="Escreve a tua mensagem…" aria-label="Mensagem para o JARVIS" />
-              <button className="javis-btn" type="submit" disabled={busy || !input.trim()}>Enviar</button>
+              <input ref={imageInputRef} type="file" accept="image/*" multiple hidden onChange={(event) => { addAttachments(event.target.files); event.target.value = ""; }} />
+              <input ref={fileInputRef} type="file" multiple hidden onChange={(event) => { addAttachments(event.target.files); event.target.value = ""; }} />
+              <button type="button" className="javis-icon-btn" title="Anexar fotografia" aria-label="Anexar fotografia" onClick={() => imageInputRef.current?.click()}>▧</button>
+              <button type="button" className="javis-icon-btn" title="Anexar ficheiro" aria-label="Anexar ficheiro" onClick={() => fileInputRef.current?.click()}>📎</button>
+              <button className="javis-btn" type="submit" disabled={busy || (!input.trim() && !attachments.length)} aria-label="Enviar mensagem">➤</button>
             </form>
+            {attachments.length > 0 && <div className="javis-attachments">{attachments.map((file, index) => <div className="javis-attachment" key={file.name + index}>
+              {file.dataUrl ? <img src={file.dataUrl} alt="" /> : <span>📄</span>}
+              <span title={file.name}>{file.name}</span>
+              <button type="button" aria-label={"Remover " + file.name} title="Remover anexo" onClick={() => setAttachments((old) => old.filter((_, i) => i !== index))}>×</button>
+            </div>)}</div>}
             <div className="javis-modes">
               <button type="button" className="javis-secondary" onClick={() => inputRef.current?.focus()}>💬 Conversar por texto</button>
               <button type="button" className={"javis-mic " + (isListening ? "listening" : "")} onClick={isListening ? () => recognitionRef.current?.stop() : startListening}>
