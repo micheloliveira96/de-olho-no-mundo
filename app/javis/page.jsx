@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 const starterMessages = [
   {
     role: "assistant",
-    content: "Olá, Michel. Sou o JARVIS. Podes escrever ou usar o microfone para falar comigo. Posso responder com IA quando a chave estiver configurada, pesquisar músicas e mostrar imagens nesta página."
+    content: "Olá. Sou o JARVIS. Podes conversar comigo por texto ou usar o microfone para falar. Também posso pesquisar músicas e mostrar imagens nesta página."
   }
 ];
 
@@ -72,6 +72,7 @@ export default function JavisPage() {
   const [status, setStatus] = useState("Pronto");
   const [errorMessage, setErrorMessage] = useState("");
   const chatEndRef = useRef(null);
+  const inputRef = useRef(null);
   const recognitionRef = useRef(null);
   const messagesRef = useRef(messages);
 
@@ -173,7 +174,6 @@ export default function JavisPage() {
     setStatus("A pensar…");
 
     const youtubeId = getYouTubeId(text);
-    const lower = text.toLowerCase();
     if (youtubeId && /youtube|youtu\.be|toca|reproduz|abre|vídeo|video|m[uú]sica/i.test(text)) {
       setBusy(false);
       setStatus("Pronto");
@@ -183,15 +183,13 @@ export default function JavisPage() {
 
     try {
       if (isMusicRequest(text)) {
-        const query = extractMusicQuery(text);
-        await searchMusic(query);
+        await searchMusic(extractMusicQuery(text));
         setBusy(false);
         setStatus("Pronto");
         return;
       }
       if (isImageRequest(text)) {
-        const query = extractImageQuery(text);
-        await searchImages(query);
+        await searchImages(extractImageQuery(text));
         setBusy(false);
         setStatus("Pronto");
         return;
@@ -200,9 +198,7 @@ export default function JavisPage() {
       const response = await fetch("/api/javis/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: current.slice(-16).map(({ role, content }) => ({ role, content }))
-        })
+        body: JSON.stringify({ messages: current.slice(-16).map(({ role, content }) => ({ role, content })) })
       });
       const data = await response.json();
       if (!response.ok) {
@@ -302,12 +298,12 @@ export default function JavisPage() {
         .javis-brand h1 { margin:0; font-size:22px; letter-spacing:4px; }
         .javis-brand p { margin:4px 0 0; color:#80a6c8; font-size:12px; letter-spacing:1.4px; }
         .javis-status { color:#6ee7b7; border:1px solid #145b4a; background:#06261f; padding:8px 12px; border-radius:999px; font-size:12px; white-space:nowrap; }
-        .javis-grid { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(340px,.9fr); gap:18px; align-items:start; }
+        .javis-grid { display:grid; grid-template-columns:minmax(0,1fr); gap:18px; align-items:start; }
         .javis-panel { border:1px solid #17334b; border-radius:20px; background:linear-gradient(150deg,#081827ee,#06111fee); box-shadow:0 18px 55px #0005; overflow:hidden; min-width:0; }
         .javis-panel-head { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:17px 19px; border-bottom:1px solid #17334b; }
         .javis-panel-head h2 { margin:0; font-size:13px; font-weight:700; letter-spacing:1px; }
         .javis-muted { color:#7f9bb6; font-size:11px; }
-        .javis-chat { min-height:390px; max-height:55vh; overflow:auto; padding:20px; display:flex; flex-direction:column; gap:13px; }
+        .javis-chat { min-height:300px; max-height:50vh; overflow:auto; padding:20px; display:flex; flex-direction:column; gap:13px; }
         .javis-msg { max-width:92%; padding:12px 14px; border-radius:15px; font-size:14px; line-height:1.65; white-space:pre-wrap; overflow-wrap:anywhere; }
         .javis-msg.assistant { align-self:flex-start; background:#0b2032; border:1px solid #173b55; color:#d9eaff; border-top-left-radius:5px; }
         .javis-msg.user { align-self:flex-end; background:linear-gradient(135deg,#075985,#155e75); border:1px solid #0e7490; color:#effcff; border-top-right-radius:5px; }
@@ -317,18 +313,20 @@ export default function JavisPage() {
         .javis-btn { border:1px solid #1ca7c9; background:linear-gradient(135deg,#087ea4,#075985); color:white; border-radius:12px; padding:11px 14px; font-weight:650; white-space:nowrap; }
         .javis-btn:disabled { opacity:.55; cursor:not-allowed; }
         .javis-secondary { border:1px solid #23445e; background:#0a1a2a; color:#b8d4ed; border-radius:12px; padding:10px 12px; }
-        .javis-mic { display:flex; align-items:center; gap:8px; padding:12px 15px; border:0; border-top:1px solid #17334b; background:#071827; color:#bfefff; width:100%; justify-content:center; font-weight:650; }
-        .javis-mic.listening { background:#3b1020; color:#ffc3d0; }
+        .javis-modes { display:flex; gap:10px; padding:12px 15px; border-top:1px solid #17334b; background:#071827; }
+        .javis-modes button { flex:1; }
+        .javis-mic { border:1px solid #1ca7c9; background:linear-gradient(135deg,#087ea4,#075985); color:white; border-radius:12px; padding:12px 15px; font-weight:650; }
+        .javis-mic.listening { background:#3b1020; color:#ffc3d0; border-color:#9f1239; }
         .javis-player-body { padding:17px; }
         .javis-video { width:100%; aspect-ratio:16/9; border:1px solid #24465f; border-radius:13px; background:#020711; overflow:hidden; }
         .javis-video iframe { width:100%; height:100%; border:0; }
         .javis-placeholder { width:100%; aspect-ratio:16/9; border:1px dashed #24465f; border-radius:13px; display:grid; place-items:center; text-align:center; padding:20px; background:radial-gradient(circle at center,#0b2a42,#030914 70%); color:#80a6c8; }
         .javis-player-form { display:flex; gap:8px; margin-top:13px; }
         .javis-hint { margin:10px 0 0; color:#7894ad; font-size:11px; line-height:1.55; }
-        .javis-tabs { display:flex; gap:7px; padding:12px 16px 0; }
+        .javis-tabs { display:flex; gap:7px; padding:12px 16px 0; max-width:360px; }
         .javis-tab { flex:1; border:1px solid #1c3a53; background:#071321; color:#91afc9; border-radius:10px; padding:9px; font-size:12px; }
         .javis-tab.active { border-color:#168dff; background:#0b2b46; color:#e2f4ff; }
-        .javis-results { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:14px 16px 18px; }
+        .javis-results { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; padding:14px 16px 18px; }
         .javis-result { border:1px solid #1a3b53; border-radius:12px; background:#061321; overflow:hidden; min-width:0; }
         .javis-result img { width:100%; aspect-ratio:16/9; object-fit:cover; display:block; background:#020711; }
         .javis-result-info { padding:10px; }
@@ -341,8 +339,8 @@ export default function JavisPage() {
         .javis-actions { display:flex; align-items:center; gap:9px; flex-wrap:wrap; padding:12px 16px; border-top:1px solid #17334b; }
         .javis-actions label { color:#93b0ca; font-size:12px; display:flex; align-items:center; gap:7px; }
         .javis-actions input { accent-color:#22d3ee; }
-        @media(max-width:850px) { .javis-shell { padding:16px; } .javis-grid { grid-template-columns:1fr; } .javis-chat { min-height:280px; max-height:48vh; } .javis-top { align-items:flex-start; } .javis-brand h1 { font-size:18px; } .javis-status { font-size:10px; padding:7px 9px; } }
-        @media(max-width:430px) { .javis-player-form { flex-direction:column; } .javis-chat-form { padding:12px; } .javis-msg { max-width:98%; } .javis-results { grid-template-columns:1fr 1fr; padding:10px; gap:8px; } .javis-result-info { padding:8px; } }
+        @media(max-width:850px) { .javis-shell { padding:16px; } .javis-chat { min-height:260px; max-height:45vh; } .javis-top { align-items:flex-start; } .javis-brand h1 { font-size:18px; } .javis-status { font-size:10px; padding:7px 9px; } .javis-results { grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); } }
+        @media(max-width:430px) { .javis-player-form { flex-direction:column; } .javis-chat-form { padding:12px; } .javis-msg { max-width:98%; } .javis-results { grid-template-columns:repeat(2,minmax(0,1fr)); padding:10px; gap:8px; } .javis-result-info { padding:8px; } .javis-modes { flex-direction:column; } }
       `}</style>
       <div className="javis-wrap">
         <header className="javis-top">
@@ -363,12 +361,15 @@ export default function JavisPage() {
             </div>
             {errorMessage && <div className="javis-error">{errorMessage}</div>}
             <form className="javis-chat-form" onSubmit={submitMessage}>
-              <input className="javis-input" value={input} onChange={(event) => setInput(event.target.value)} placeholder="Fala ou escreve ao JARVIS…" aria-label="Mensagem para o JARVIS" />
+              <input ref={inputRef} className="javis-input" value={input} onChange={(event) => setInput(event.target.value)} placeholder="Escreve a tua mensagem…" aria-label="Mensagem para o JARVIS" />
               <button className="javis-btn" type="submit" disabled={busy || !input.trim()}>Enviar</button>
             </form>
-            <button type="button" className={"javis-mic " + (isListening ? "listening" : "")} onClick={isListening ? () => recognitionRef.current?.stop() : startListening}>
-              {isListening ? "■ Parar de ouvir" : "🎙 Falar com o JARVIS"}
-            </button>
+            <div className="javis-modes">
+              <button type="button" className="javis-secondary" onClick={() => inputRef.current?.focus()}>💬 Conversar por texto</button>
+              <button type="button" className={"javis-mic " + (isListening ? "listening" : "")} onClick={isListening ? () => recognitionRef.current?.stop() : startListening}>
+                {isListening ? "■ Parar de ouvir" : "🎙 Conversar por voz"}
+              </button>
+            </div>
             <div className="javis-actions">
               <label><input type="checkbox" checked={voiceEnabled} onChange={(event) => setVoiceEnabled(event.target.checked)} /> Ler respostas em voz alta</label>
               <button type="button" className="javis-secondary" onClick={() => { window.speechSynthesis?.cancel(); }}>Parar voz</button>
@@ -377,9 +378,9 @@ export default function JavisPage() {
           </section>
 
           <aside className="javis-panel">
-            <div className="javis-panel-head"><h2>JANELA DE CONTEÚDOS</h2><span className="javis-muted">DENTRO DO JARVIS</span></div>
+            <div className="javis-panel-head"><h2>CONTEÚDOS E RESULTADOS</h2><span className="javis-muted">PAINEL HORIZONTAL</span></div>
             <div className="javis-tabs">
-              <button type="button" className={"javis-tab " + (panel === "music" ? "active" : "")} onClick={() => setPanel("music")}>♫ Música</button>
+              <button type="button" className={"javis-tab " + (panel === "music" ? "active" : "")} onClick={() => setPanel("music")}>♫ Vídeos e música</button>
               <button type="button" className={"javis-tab " + (panel === "images" ? "active" : "")} onClick={() => setPanel("images")}>▧ Imagens</button>
             </div>
             {panel === "music" && <>
