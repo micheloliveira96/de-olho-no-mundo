@@ -68,6 +68,9 @@ export default function JavisPage() {
   const [playerOpen, setPlayerOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [wakeEnabled, setWakeEnabled] = useState(false);
+  const wakeModeRef = useRef(false);
+  const awaitingCommandRef = useRef(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [status, setStatus] = useState("Pronto");
   const [errorMessage, setErrorMessage] = useState("");
@@ -258,7 +261,91 @@ export default function JavisPage() {
     }
   }, [addMessage, processMessage]);
 
+  const toggleWakeWord = useCallback(() => {
+    if (wakeModeRef.current) {
+      wakeModeRef.current = false;
+      awaitingCommandRef.current = false;
+      setWakeEnabled(false);
+      recognitionRef.current?.abort();
+      setIsListening(false);
+      setStatus("Pronto");
+      return;
+    }
+    if (typeof window === "undefined") return;
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setErrorMessage("O reconhecimento contínuo não é suportado neste navegador. Experimenta o Chrome ou Edge atualizado.");
+      return;
+    }
+    try {
+      recognitionRef.current?.abort();
+      const recognition = new SpeechRecognition();
+      recognition.lang = "pt-PT";
+      recognition.interimResults = false;
+      recognition.continuous = true;
+      wakeModeRef.current = true;
+      awaitingCommandRef.current = false;
+      setWakeEnabled(true);
+      recognition.onstart = () => {
+        setIsListening(true);
+        setStatus('À espera de "Oi, JARVIS"');
+        setErrorMessage("");
+      };
+      recognition.onresult = (event) => {
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          if (!event.results[i].isFinal) continue;
+          const transcript = event.results[i][0]?.transcript?.trim();
+          if (!transcript) continue;
+          const normalized = transcript.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase();
+          const wakeMatch = normalized.match(/\\b(?:oi|ola|hey|ok|okay)?\\s*jarvis\\b/);
+          if (wakeMatch) {
+            const command = normalized.slice(wakeMatch.index + wakeMatch[0].length).trim().replace(/^[,.:;!?\\s]+/, "");
+            if (command) {
+              awaitingCommandRef.current = false;
+              processMessage(command);
+            } else {
+              awaitingCommandRef.current = true;
+              speak("Estou a ouvir. Diz o teu pedido.");
+              setStatus("Estou a ouvir o teu pedido");
+            }
+          } else if (awaitingCommandRef.current) {
+            awaitingCommandRef.current = false;
+            processMessage(transcript);
+          }
+        }
+      };
+      recognition.onerror = (event) => {
+        if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+          wakeModeRef.current = false;
+          setWakeEnabled(false);
+          setErrorMessage("Permite o acesso ao microfone nas definições do navegador para usar a palavra de ativação.");
+        } else if (event.error !== "aborted" && event.error !== "no-speech") {
+          setErrorMessage("A escuta por palavra de ativação foi interrompida. Podes voltar a ativá-la.");
+        }
+      };
+      recognition.onend = () => {
+        setIsListening(false);
+        if (wakeModeRef.current) {
+          window.setTimeout(() => {
+            if (!wakeModeRef.current) return;
+            try { recognition.start(); } catch {}
+          }, 700);
+        } else {
+          setStatus("Pronto");
+        }
+      };
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch {
+      wakeModeRef.current = false;
+      setWakeEnabled(false);
+      setIsListening(false);
+      setErrorMessage("Não consegui iniciar a escuta. Confirma a permissão do microfone e tenta novamente.");
+    }
+  }, [processMessage, speak]);
+
   useEffect(() => () => {
+    wakeModeRef.current = false;
     recognitionRef.current?.abort();
     if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel();
   }, []);
@@ -371,6 +458,12 @@ export default function JavisPage() {
                 {isListening ? "■ Parar de ouvir" : "🎙 Conversar por voz"}
               </button>
             </div>
+            <div className="javis-modes">
+              <button type="button" className={wakeEnabled ? "javis-mic listening" : "javis-secondary"} onClick={toggleWakeWord}>
+                {wakeEnabled ? '● Escuta ativa: "Oi, JARVIS" (desativar)' : '◉ Ativar "Oi, JARVIS"'}
+              </button>
+            </div>
+            <p className="javis-hint" style={{padding:"0 16px 10px",margin:0}}>A palavra de ativação requer esta página aberta, microfone autorizado e suporte do navegador. O microfone fica ativo enquanto a escuta estiver ligada.</p>
             <div className="javis-actions">
               <label><input type="checkbox" checked={voiceEnabled} onChange={(event) => setVoiceEnabled(event.target.checked)} /> Ler respostas em voz alta</label>
               <button type="button" className="javis-secondary" onClick={() => { window.speechSynthesis?.cancel(); }}>Parar voz</button>
