@@ -142,8 +142,11 @@ export default function Home() {
     <section className="main">
       <header className="topbar">
         <span className="breadcrumb">Painel <b>/</b> {active}</span>
-        <div className="worldClocks" aria-label="Horários locais">
-          {clocks.map(c=><div className="clock" key={c.zone}><span className="clockFlag">{c.flag}</span><span className="clockText"><small>{c.city}</small><b>{new Intl.DateTimeFormat("pt-PT",{timeZone:c.zone,hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).format(clockNow)}</b></span></div>)}
+        <div className="clockActions">
+          <div className="worldClocks" aria-label="Horários locais">
+            {clocks.map(c=><div className="clock" key={c.zone}><span className="clockFlag">{c.flag}</span><span className="clockText"><small>{c.city}</small><b>{new Intl.DateTimeFormat("pt-PT",{timeZone:c.zone,hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).format(clockNow)}</b></span></div>)}
+          </div>
+          <a className="keturaButton" href="/jarvis" aria-label="Abrir K.E.T.U.R.A.">✦ <span>K.E.T.U.R.A.</span></a>
         </div>
       </header>
       <div className="page">
