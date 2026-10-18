@@ -5,9 +5,26 @@ export async function POST(request) {
     const body = await request.json();
     const messages = Array.isArray(body.messages) ? body.messages : [];
     const safeMessages = messages
-      .filter((message) => message && ["user", "assistant"].includes(message.role) && typeof message.content === "string")
+      .filter((message) => message && ["user", "assistant"].includes(message.role) &&
+        (typeof message.content === "string" || (Array.isArray(message.content) && message.role === "user")))
       .slice(-16)
-      .map((message) => ({ role: message.role, content: message.content.slice(0, 5000) }));
+      .map((message) => {
+        if (typeof message.content === "string") {
+          return { role: message.role, content: message.content.slice(0, 16000) };
+        }
+        const content = message.content
+          .filter((part) => part && typeof part === "object")
+          .filter((part) =>
+            (part.type === "text" && typeof part.text === "string") ||
+            (part.type === "image_url" && typeof part.image_url?.url === "string" &&
+              /^data:image\\/(png|jpeg|jpg|webp|gif);base64,/i.test(part.image_url.url))
+          )
+          .slice(0, 6)
+          .map((part) => part.type === "text"
+            ? { type: "text", text: part.text.slice(0, 12000) }
+            : { type: "image_url", image_url: { url: part.image_url.url } });
+        return { role: message.role, content };
+      });
 
     if (!safeMessages.length || !safeMessages.some((message) => message.role === "user")) {
       return Response.json({ error: "Escreve ou diz uma pergunta primeiro." }, { status: 400 });
