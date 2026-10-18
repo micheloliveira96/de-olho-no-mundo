@@ -65,3 +65,51 @@ button:disabled{opacity:.65;cursor:not-allowed}
 .converterQuickLinks strong{color:#48b7ff}
 .converterContent footer{padding-top:30px}
 @media(max-width:600px){.converterTopbar{padding:13px 15px}.converterContent{width:calc(100% - 24px);padding-top:30px}.converterCard{padding:17px}.converterCardHead{align-items:flex-start}.converterBadge{font-size:9px}.currencySwapRow{grid-template-columns:minmax(0,1fr) 38px minmax(0,1fr);gap:7px}.swapButton{width:38px;height:42px}.converterField select{padding:12px 5px;font-size:10px}.converterQuickLinks{grid-template-columns:1fr}.converterQuickLinks button{padding:14px}.converterIntro h1{font-size:37px}}
+
+
+/* Responsive layout hardening: clocks and K.E.T.U.R.A. action */
+.layout .topbar{width:100%;min-width:0;flex-wrap:wrap}
+.layout .topbar .breadcrumb{min-width:0;overflow-wrap:anywhere}
+.layout .clockActions{flex:1 1 620px;min-width:0;max-width:100%;gap:clamp(6px,1vw,12px)}
+.layout .worldClocks{flex:1 1 auto;min-width:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(4px,.7vw,8px)}
+.layout .clock{min-width:0;width:100%;padding:clamp(6px,.8vw,10px);gap:clamp(4px,.6vw,9px)}
+.layout .clockText{min-width:0}
+.layout .clockText small{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.layout .clockText b{font-size:clamp(11px,1.15vw,17px);letter-spacing:0;white-space:nowrap}
+.layout .clockFlag{flex-shrink:0}
+.layout .keturaButton{flex:0 0 auto;max-width:100%;padding:clamp(8px,.8vw,11px) clamp(9px,1vw,13px)}
+@media(max-width:1150px){
+  .layout .topbar{gap:12px;padding:12px 20px}
+  .layout .clockActions{flex-basis:100%;justify-content:space-between}
+  .layout .worldClocks{flex:1 1 auto}
+  .layout .clock{flex-direction:row;justify-content:center}
+  .layout .clockText b{font-size:clamp(11px,1.5vw,15px)}
+}
+@media(max-width:850px){
+  .layout .topbar{align-items:stretch}
+  .layout .clockActions{gap:7px}
+  .layout .clock{padding:7px 5px;gap:5px}
+  .layout .clockFlag{font-size:16px}
+  .layout .clockText small{font-size:9px}
+  .layout .clockText b{font-size:12px}
+  .layout .keturaButton{font-size:10px;letter-spacing:.2px}
+}
+@media(max-width:560px){
+  .layout .topbar{padding:12px 14px;gap:10px}
+  .layout .clockActions{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+  .layout .worldClocks{flex:1 1 100%;width:100%;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+  .layout .clock{flex-direction:column;justify-content:center;align-items:center;gap:4px;padding:8px 3px;border-radius:9px}
+  .layout .clockFlag{font-size:15px;line-height:1.1}
+  .layout .clockText{text-align:center;width:100%;gap:3px}
+  .layout .clockText small{font-size:clamp(8px,2.4vw,10px)}
+  .layout .clockText b{font-size:clamp(10px,3vw,13px);letter-spacing:0}
+  .layout .keturaButton{margin:0 auto;padding:9px 14px;font-size:10px}
+}
+@media(max-width:350px){
+  .layout .topbar{padding:10px}
+  .layout .worldClocks{gap:3px}
+  .layout .clock{padding:7px 2px}
+  .layout .clockText small{font-size:8px}
+  .layout .clockText b{font-size:10px}
+  .layout .keturaButton{width:100%}
+}
