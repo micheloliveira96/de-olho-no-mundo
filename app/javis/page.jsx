@@ -192,6 +192,7 @@ export default function JavisPage() {
       setBusy(false);
       setStatus("Pronto");
       playVideo(youtubeId, "Vídeo do YouTube");
+      if (wakeModeRef.current) { processingVoiceRef.current = false; startWakeListeningRef.current?.(); }
       return;
     }
 
@@ -200,12 +201,14 @@ export default function JavisPage() {
         await searchMusic(extractMusicQuery(text));
         setBusy(false);
         setStatus("Pronto");
+        if (wakeModeRef.current) { processingVoiceRef.current = false; startWakeListeningRef.current?.(); }
         return;
       }
       if (isImageRequest(text)) {
         await searchImages(extractImageQuery(text));
         setBusy(false);
         setStatus("Pronto");
+        if (wakeModeRef.current) { processingVoiceRef.current = false; startWakeListeningRef.current?.(); }
         return;
       }
 
@@ -356,10 +359,10 @@ export default function JavisPage() {
       recognition.onresult = (event) => {
         const transcript = event.results?.[0]?.[0]?.transcript?.trim();
         if (!transcript) return;
-        const normalized = transcript.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase();
-        const wakeMatch = normalized.match(/(?:^|\\s)(?:(?:oi|ola|hey|ok|okay)\\s+)?k\\.?e\\.?t\\.?u\\.?r\\.?a\\b/i);
+        const normalized = transcript.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        const wakeMatch = normalized.match(/(?:^|\s)(?:(?:oi|ola|hey|ok|okay)\s+)?k\.?e\.?t\.?u\.?r\.?a\b/i);
         if (wakeMatch) {
-          const command = normalized.slice(wakeMatch.index + wakeMatch[0].length).trim().replace(/^[,.:;!?\\s]+/, "");
+          const command = normalized.slice(wakeMatch.index + wakeMatch[0].length).trim().replace(/^[,.:;!?\s]+/, "");
           if (command) {
             awaitingCommandRef.current = false;
             processingVoiceRef.current = true;
