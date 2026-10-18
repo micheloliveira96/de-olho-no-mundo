@@ -407,6 +407,45 @@ export default function JavisPage() {
 
   useEffect(() => { startWakeListeningRef.current = startWakeListening; }, [startWakeListening]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const enableAutomaticListening = async () => {
+      if (wakeModeRef.current || typeof window === "undefined") return;
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        setErrorMessage("Este navegador não suporta escuta automática por voz. Experimenta o Chrome ou Edge atualizado.");
+        return;
+      }
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setErrorMessage("Para a escuta automática, abre esta página em HTTPS num navegador compatível.");
+        return;
+      }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach((track) => track.stop());
+        if (cancelled) return;
+        wakeModeRef.current = true;
+        awaitingCommandRef.current = false;
+        processingVoiceRef.current = false;
+        setWakeEnabled(true);
+        setErrorMessage("");
+        startWakeListeningRef.current?.();
+      } catch (error) {
+        if (cancelled) return;
+        setWakeEnabled(false);
+        setErrorMessage(error?.name === "NotAllowedError"
+          ? "Permite o microfone nas definições do site para que K.E.T.U.R.A. possa ficar à escuta."
+          : "Não consegui iniciar a escuta automática. Verifica o microfone e as permissões do navegador.");
+      }
+    };
+    enableAutomaticListening();
+    return () => {
+      cancelled = true;
+      wakeModeRef.current = false;
+      recognitionRef.current?.abort();
+    };
+  }, []);
+
   const toggleWakeWord = useCallback(async () => {
     if (wakeModeRef.current) {
       wakeModeRef.current = false;
@@ -569,12 +608,7 @@ export default function JavisPage() {
                 {isListening ? "■ Parar de ouvir" : "🎙 Conversar por voz"}
               </button>
             </div>
-            <div className="javis-modes">
-              <button type="button" className={wakeEnabled ? "javis-mic listening" : "javis-secondary"} onClick={toggleWakeWord}>
-                {wakeEnabled ? '● Escuta ativa: "Oi, K.E.T.U.R.A." (desativar)' : '◉ Ativar "Oi, K.E.T.U.R.A."'}
-              </button>
-            </div>
-            <p className="javis-hint" style={{padding:"0 16px 10px",margin:0}}>A palavra de ativação requer esta página aberta, microfone autorizado e suporte do navegador. O microfone fica ativo enquanto a escuta estiver ligada.</p>
+            <p className="javis-hint" style={{padding:"0 16px 10px",margin:0}}>{wakeEnabled ? 'K.E.T.U.R.A. está à escuta. Diz “Oi, Ketura” e depois faz o teu pedido.' : 'A escuta automática precisa de permissão para usar o microfone.'}</p>
             <div className="javis-actions">
               <label><input type="checkbox" checked={voiceEnabled} onChange={(event) => setVoiceEnabled(event.target.checked)} /> Ler respostas em voz alta</label>
               <button type="button" className="javis-secondary" onClick={() => { window.speechSynthesis?.cancel(); }}>Parar voz</button>
