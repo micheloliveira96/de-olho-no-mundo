@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 const starterMessages = [
   {
     role: "assistant",
-    content: "Olá. Sou o JARVIS. Podes conversar comigo por texto ou usar o microfone para falar. Também posso pesquisar músicas e mostrar imagens nesta página."
+    content: "Olá. Sou K.E.T.U.R.A., a tua assistente pessoal. Podes conversar comigo por texto ou voz, enviar ficheiros e pesquisar conteúdos."
   }
 ];
 
@@ -32,7 +32,7 @@ function isMusicRequest(text) {
 
 function extractMusicQuery(text) {
   const cleaned = text
-    .replace(/^(jarvis[,: ]*)?/i, "")
+    .replace(/^(?:k\.?e\.?t\.?u\.?r\.?a\.?[,: ]*)?/i, "")
     .replace(/\b(toca|tocar|toque|reproduz|reproduzir|procura|pesquisa|encontra|quero ouvir|quero|ouve|mete|p[oõ]e|por favor)\b/ig, " ")
     .replace(/\b(uma|a|o|as|os|m[uú]sica|musicas|can[cç][aã]o|can[cç][oõ]es|no youtube|youtube|para mim|a[ií]|agora)\b/ig, " ")
     .replace(/[“”"]/g, "")
@@ -49,7 +49,7 @@ function isImageRequest(text) {
 
 function extractImageQuery(text) {
   return text
-    .replace(/^(jarvis[,: ]*)?/i, "")
+    .replace(/^(ketura[,: ]*)?/i, "")
     .replace(/\b(mostra|mostrar|procura|pesquisa|encontra|quero ver|exibe|exibir)\b/ig, "")
     .replace(/\b(imagem|imagens|fotografia|fotografias|fotos|foto)\b/ig, "")
     .replace(/\b(por favor|para mim)\b/ig, "")
@@ -69,6 +69,8 @@ export default function JavisPage() {
   const [busy, setBusy] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [wakeEnabled, setWakeEnabled] = useState(false);
+  const processingVoiceRef = useRef(false);
+  const startWakeListeningRef = useRef(null);
   const [attachments, setAttachments] = useState([]);
   const imageInputRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -87,8 +89,8 @@ export default function JavisPage() {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, busy]);
 
-  const speak = useCallback((text) => {
-    if (!voiceEnabled || typeof window === "undefined" || !("speechSynthesis" in window)) return;
+  const speak = useCallback((text, onEnd) => {
+    if (!voiceEnabled || typeof window === "undefined" || !("speechSynthesis" in window)) { onEnd?.(); return; }
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = "pt-PT";
@@ -98,6 +100,8 @@ export default function JavisPage() {
     const portugueseVoice = voices.find((voice) => voice.lang.toLowerCase().startsWith("pt-pt")) ||
       voices.find((voice) => voice.lang.toLowerCase().startsWith("pt"));
     if (portugueseVoice) utterance.voice = portugueseVoice;
+    utterance.onend = () => onEnd?.();
+    utterance.onerror = () => onEnd?.();
     window.speechSynthesis.speak(utterance);
   }, [voiceEnabled]);
 
@@ -229,16 +233,31 @@ export default function JavisPage() {
         const message = data.error || "A inteligência artificial ainda não está configurada.";
         setErrorMessage(message);
         addMessage("assistant", message);
-        speak(message);
+        speak(message, () => {
+          if (wakeModeRef.current) {
+            processingVoiceRef.current = false;
+            startWakeListeningRef.current?.();
+          }
+        });
       } else {
         addMessage("assistant", data.answer);
-        speak(data.answer);
+        speak(data.answer, () => {
+          if (wakeModeRef.current) {
+            processingVoiceRef.current = false;
+            startWakeListeningRef.current?.();
+          }
+        });
       }
     } catch {
       const message = "Não consegui ligar ao serviço de inteligência artificial. Tenta novamente.";
       setErrorMessage(message);
       addMessage("assistant", message);
-      speak(message);
+      speak(message, () => {
+        if (wakeModeRef.current) {
+          processingVoiceRef.current = false;
+          startWakeListeningRef.current?.();
+        }
+      });
     } finally {
       setBusy(false);
       setStatus("Pronto");
@@ -315,10 +334,80 @@ export default function JavisPage() {
     }
   }, [addMessage, processMessage]);
 
+  const startWakeListening = useCallback(() => {
+    if (!wakeModeRef.current || typeof window === "undefined") return;
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      wakeModeRef.current = false;
+      setWakeEnabled(false);
+      setIsListening(false);
+      setErrorMessage("Este navegador não suporta reconhecimento de voz. Experimenta o Chrome ou Edge atualizado.");
+      return;
+    }
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = "pt-PT";
+      recognition.interimResults = false;
+      recognition.continuous = false;
+      recognition.onstart = () => {
+        setIsListening(true);
+        setStatus(awaitingCommandRef.current ? "À espera do teu pedido…" : 'À espera de "Oi, K.E.T.U.R.A."');
+      };
+      recognition.onresult = (event) => {
+        const transcript = event.results?.[0]?.[0]?.transcript?.trim();
+        if (!transcript) return;
+        const normalized = transcript.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase();
+        const wakeMatch = normalized.match(/(?:^|\\s)(?:(?:oi|ola|hey|ok|okay)\\s+)?k\\.?e\\.?t\\.?u\\.?r\\.?a\\b/i);
+        if (wakeMatch) {
+          const command = normalized.slice(wakeMatch.index + wakeMatch[0].length).trim().replace(/^[,.:;!?\\s]+/, "");
+          if (command) {
+            awaitingCommandRef.current = false;
+            processingVoiceRef.current = true;
+            recognition.stop();
+            processMessage(command);
+          } else {
+            awaitingCommandRef.current = true;
+            recognition.stop();
+            speak("Estou a ouvir. Diz o teu pedido.", () => startWakeListeningRef.current?.());
+          }
+        } else if (awaitingCommandRef.current) {
+          awaitingCommandRef.current = false;
+          processingVoiceRef.current = true;
+          recognition.stop();
+          processMessage(transcript);
+        }
+      };
+      recognition.onerror = (event) => {
+        setIsListening(false);
+        if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+          wakeModeRef.current = false;
+          setWakeEnabled(false);
+          setErrorMessage("O acesso ao microfone foi recusado. Permite-o nas definições do site e ativa a escuta novamente.");
+        } else if (event.error !== "no-speech" && event.error !== "aborted") {
+          setErrorMessage("A escuta foi interrompida. Tenta ativá-la novamente.");
+        }
+      };
+      recognition.onend = () => {
+        setIsListening(false);
+        if (wakeModeRef.current && !processingVoiceRef.current) {
+          window.setTimeout(() => startWakeListeningRef.current?.(), 350);
+        }
+      };
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch {
+      setIsListening(false);
+      if (wakeModeRef.current) window.setTimeout(() => startWakeListeningRef.current?.(), 800);
+    }
+  }, [processMessage, speak]);
+
+  useEffect(() => { startWakeListeningRef.current = startWakeListening; }, [startWakeListening]);
+
   const toggleWakeWord = useCallback(async () => {
     if (wakeModeRef.current) {
       wakeModeRef.current = false;
       awaitingCommandRef.current = false;
+      processingVoiceRef.current = false;
       setWakeEnabled(false);
       recognitionRef.current?.abort();
       setIsListening(false);
@@ -328,79 +417,30 @@ export default function JavisPage() {
     if (typeof window === "undefined") return;
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      setErrorMessage("O reconhecimento contínuo não é suportado neste navegador. Experimenta o Chrome ou Edge atualizado.");
+      setErrorMessage("Este navegador não suporta reconhecimento de voz. Experimenta o Chrome ou Edge atualizado.");
       return;
     }
     try {
-      if (navigator.mediaDevices?.getUserMedia) {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        stream.getTracks().forEach((track) => track.stop());
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setErrorMessage("Este navegador não disponibiliza acesso seguro ao microfone. Abre o site em HTTPS e tenta novamente.");
+        return;
       }
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach((track) => track.stop());
       recognitionRef.current?.abort();
-      const recognition = new SpeechRecognition();
-      recognition.lang = "pt-PT";
-      recognition.interimResults = false;
-      recognition.continuous = true;
       wakeModeRef.current = true;
       awaitingCommandRef.current = false;
+      processingVoiceRef.current = false;
       setWakeEnabled(true);
-      recognition.onstart = () => {
-        setIsListening(true);
-        setStatus('À espera de "Oi, JARVIS"');
-        setErrorMessage("");
-      };
-      recognition.onresult = (event) => {
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          if (!event.results[i].isFinal) continue;
-          const transcript = event.results[i][0]?.transcript?.trim();
-          if (!transcript) continue;
-          const normalized = transcript.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-          const wakeMatch = normalized.match(/\b(?:oi|ola|hey|ok|okay)?\s*jarvis\b/);
-          if (wakeMatch) {
-            const command = normalized.slice(wakeMatch.index + wakeMatch[0].length).trim().replace(/^[,.:;!?\s]+/, "");
-            if (command) {
-              awaitingCommandRef.current = false;
-              processMessage(command);
-            } else {
-              awaitingCommandRef.current = true;
-              speak("Estou a ouvir. Diz o teu pedido.");
-              setStatus("Estou a ouvir o teu pedido");
-            }
-          } else if (awaitingCommandRef.current) {
-            awaitingCommandRef.current = false;
-            processMessage(transcript);
-          }
-        }
-      };
-      recognition.onerror = (event) => {
-        if (event.error === "not-allowed" || event.error === "service-not-allowed") {
-          wakeModeRef.current = false;
-          setWakeEnabled(false);
-          setErrorMessage("Permite o acesso ao microfone nas definições do navegador para usar a palavra de ativação.");
-        } else if (event.error !== "aborted" && event.error !== "no-speech") {
-          setErrorMessage("A escuta por palavra de ativação foi interrompida. Podes voltar a ativá-la.");
-        }
-      };
-      recognition.onend = () => {
-        setIsListening(false);
-        if (wakeModeRef.current) {
-          window.setTimeout(() => {
-            if (!wakeModeRef.current) return;
-            try { recognition.start(); } catch {}
-          }, 700);
-        } else {
-          setStatus("Pronto");
-        }
-      };
-      recognitionRef.current = recognition;
-      recognition.start();
-    } catch {
+      setErrorMessage("");
+      startWakeListeningRef.current?.();
+    } catch (error) {
       wakeModeRef.current = false;
       setWakeEnabled(false);
       setIsListening(false);
-      setErrorMessage("Não consegui iniciar a escuta. Confirma a permissão do microfone e tenta novamente.");
+      setErrorMessage(error?.name === "NotAllowedError" ? "O acesso ao microfone foi recusado. Permite-o nas definições do site e tenta novamente." : "Não consegui iniciar o microfone. Verifica as permissões do navegador.");
     }
-  }, [processMessage, speak]);
+  }, []);
 
   useEffect(() => () => {
     wakeModeRef.current = false;
@@ -499,7 +539,7 @@ export default function JavisPage() {
 
         <div className="javis-grid">
           <section className="javis-panel">
-            <div className="javis-panel-head"><h2>CONVERSA COM O JARVIS</h2><span className="javis-muted">PT-PT</span></div>
+            <div className="javis-panel-head"><h2>CONVERSA COM O K.E.T.U.R.A.</h2><span className="javis-muted">PT-PT</span></div>
             <div className="javis-chat" aria-live="polite">
               {messages.map((message, index) => <div key={index} className={"javis-msg " + message.role}>{message.content}</div>)}
               {busy && <div className="javis-msg assistant">A processar o teu pedido…</div>}
@@ -507,7 +547,7 @@ export default function JavisPage() {
             </div>
             {errorMessage && <div className="javis-error">{errorMessage}</div>}
             <form className="javis-chat-form" onSubmit={submitMessage}>
-              <input ref={inputRef} className="javis-input" value={input} onChange={(event) => setInput(event.target.value)} placeholder="Escreve a tua mensagem…" aria-label="Mensagem para o JARVIS" />
+              <input ref={inputRef} className="javis-input" value={input} onChange={(event) => setInput(event.target.value)} placeholder="Escreve a tua mensagem…" aria-label="Mensagem para o K.E.T.U.R.A." />
               <input ref={imageInputRef} type="file" accept="image/*" multiple hidden onChange={(event) => { addAttachments(event.target.files); event.target.value = ""; }} />
               <input ref={fileInputRef} type="file" multiple hidden onChange={(event) => { addAttachments(event.target.files); event.target.value = ""; }} />
               <button type="button" className="javis-icon-btn" title="Anexar fotografia" aria-label="Anexar fotografia" onClick={() => imageInputRef.current?.click()}>▧</button>
@@ -527,7 +567,7 @@ export default function JavisPage() {
             </div>
             <div className="javis-modes">
               <button type="button" className={wakeEnabled ? "javis-mic listening" : "javis-secondary"} onClick={toggleWakeWord}>
-                {wakeEnabled ? '● Escuta ativa: "Oi, JARVIS" (desativar)' : '◉ Ativar "Oi, JARVIS"'}
+                {wakeEnabled ? '● Escuta ativa: "Oi, K.E.T.U.R.A." (desativar)' : '◉ Ativar "Oi, K.E.T.U.R.A."'}
               </button>
             </div>
             <p className="javis-hint" style={{padding:"0 16px 10px",margin:0}}>A palavra de ativação requer esta página aberta, microfone autorizado e suporte do navegador. O microfone fica ativo enquanto a escuta estiver ligada.</p>
@@ -558,12 +598,12 @@ export default function JavisPage() {
               {musicResults.length > 0 ? <div className="javis-results">{musicResults.map((item) => <article className="javis-result" key={item.id}>
                 <img src={item.thumbnail} alt="" loading="lazy" />
                 <div className="javis-result-info"><p className="javis-result-title">{item.title}</p><p className="javis-result-sub">{item.channel}</p><button type="button" className="javis-btn" onClick={() => playVideo(item.id, item.title)}>▶ Tocar</button></div>
-              </article>)}</div> : <div className="javis-empty">Os resultados de música aparecerão aqui. Experimenta dizer: “JARVIS, toca música relaxante” depois de configurar a API do YouTube.</div>}
+              </article>)}</div> : <div className="javis-empty">Os resultados de música aparecerão aqui. Experimenta dizer: “K.E.T.U.R.A., toca música relaxante” depois de configurar a API do YouTube.</div>}
             </>}
 
             {panel === "images" && <>
               <div className="javis-player-body">
-                <div className="javis-placeholder" style={{aspectRatio:"16/7"}}><div><div style={{fontSize:30,marginBottom:7}}>▧</div><strong>Pesquisa de imagens</strong><p style={{fontSize:12,lineHeight:1.6}}>Pede ao JARVIS para mostrar imagens de um tema.</p></div></div>
+                <div className="javis-placeholder" style={{aspectRatio:"16/7"}}><div><div style={{fontSize:30,marginBottom:7}}>▧</div><strong>Pesquisa de imagens</strong><p style={{fontSize:12,lineHeight:1.6}}>Pede ao K.E.T.U.R.A. para mostrar imagens de um tema.</p></div></div>
               </div>
               {imageResults.length > 0 ? <div className="javis-results">{imageResults.map((item, index) => <article className="javis-result" key={item.pageUrl || item.url || index}>
                 <a href={item.pageUrl || item.url} target="_blank" rel="noreferrer"><img src={item.url} alt={item.title} loading="lazy" /></a>
@@ -572,7 +612,7 @@ export default function JavisPage() {
             </>}
           </aside>
         </div>
-        <footer className="javis-footer">JARVIS · A voz usa as capacidades disponíveis no navegador. A IA e a pesquisa de música precisam de chaves configuradas no servidor. O assistente só navega e executa ações dentro das funcionalidades autorizadas desta página.</footer>
+        <footer className="javis-footer">K.E.T.U.R.A. · A voz usa as capacidades disponíveis no navegador. A IA e a pesquisa de música precisam de chaves configuradas no servidor. O assistente só navega e executa ações dentro das funcionalidades autorizadas desta página.</footer>
       </div>
     </main>
   );
