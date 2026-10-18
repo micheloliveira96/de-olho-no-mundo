@@ -113,3 +113,30 @@ button:disabled{opacity:.65;cursor:not-allowed}
   .layout .clockText b{font-size:10px}
   .layout .keturaButton{width:100%}
 }
+
+
+/* Meta Marketing API onboarding page */
+.metaSetupPage{min-height:100vh;background:radial-gradient(ellipse at 76% 0%,#07335a 0,transparent 36%),linear-gradient(145deg,#030812,#06111e 58%,#030812);color:var(--ink)}
+.metaSetupTop{min-height:72px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px max(20px,calc((100vw - 1080px)/2));border-bottom:1px solid #102a40;background:#030a13c9}
+.metaBack{color:#9bc9e8;text-decoration:none;font-size:12px;border:1px solid #17415e;background:#071827;padding:10px 13px;border-radius:9px}
+.metaSetupBrand{font:800 10px Manrope;letter-spacing:1.5px;color:#e8f6ff}.metaSetupBrand i{font-style:normal;color:#4bbcff}
+.metaSetupContent{width:min(100% - 40px,860px);margin:0 auto;padding:48px 0 35px}
+.metaEyebrow{display:flex;align-items:center;gap:9px;color:#56baff;font-size:10px;font-weight:800;letter-spacing:2px;margin-bottom:16px}
+.metaEyebrow span,.metaStatusDot{width:7px;height:7px;border-radius:50%;background:#ffbd59;box-shadow:0 0 12px #ffbd5940}
+.metaSetupContent h1{font:800 clamp(38px,6vw,62px)/1.02 Manrope;letter-spacing:-2px}
+.metaSetupContent h1 em{font-style:normal;color:#26a7ff}
+.metaLead{max-width:650px;color:#a5bdd1;font-size:14px;line-height:1.8;margin-top:18px}
+.metaStatus{display:flex;align-items:center;gap:13px;padding:16px;margin-top:25px;background:#101d2b;border:1px solid #5a4528;border-radius:12px}
+.metaStatusDot{flex-shrink:0}.metaStatus strong,.metaStatus small{display:block}.metaStatus strong{font-size:12px;color:#ffe0a7}.metaStatus small{font-size:11px;color:#9bb0c4;margin-top:5px;line-height:1.5}
+.metaPrimary{display:inline-flex;align-items:center;gap:24px;margin-top:17px;padding:13px 17px;background:linear-gradient(100deg,#0879df,#0955a5);border:1px solid #159bff;border-radius:10px;color:#fff;text-decoration:none;font-size:12px;font-weight:800}
+.metaPrimary:hover{filter:brightness(1.12)}
+.metaChecklist{margin-top:35px;padding:22px;background:linear-gradient(145deg,#081827,#050e19);border:1px solid #15354e;border-radius:16px}
+.metaSectionTitle{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:14px}.metaSectionTitle h2{font:750 17px Manrope}.metaSectionTitle p{font-size:11px;color:#7790a8;margin-top:6px;line-height:1.5}.metaSectionTitle>span{white-space:nowrap;font-size:9px;color:#59baff;letter-spacing:1px}
+.metaCheck{display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:start;gap:13px;padding:18px 0;border-top:1px solid #142c40}
+.metaCheckNum{display:grid;place-items:center;width:30px;height:30px;border:1px solid #24506e;border-radius:9px;color:#8db7d4;background:#0a2032;font-size:12px;font-weight:800}
+.metaCheckNum.active{color:#fff;border-color:#168dff;background:#0a3760}
+.metaCheck h3{font-size:12px;color:#e8f5ff;margin:2px 0 7px}.metaCheck p{font-size:11px;color:#91a7bd;line-height:1.7}
+.metaCheck>small{font-size:10px;color:#7790a8;white-space:nowrap;padding-top:8px}
+.metaSafety{margin-top:17px;padding:16px 18px;background:#0b1c2b;border:1px solid #1b405a;border-radius:12px}.metaSafety strong{font-size:12px;color:#7ed0ff}.metaSafety p{font-size:11px;color:#a4bbce;line-height:1.7;margin-top:7px}
+.metaFooter{font-size:10px;color:#6f899f;line-height:1.8;text-align:center;margin:20px auto 0;max-width:650px}
+@media(max-width:600px){.metaSetupTop{padding:12px;align-items:flex-start;flex-direction:column}.metaSetupContent{width:calc(100% - 24px);padding-top:30px}.metaChecklist{padding:16px}.metaSectionTitle{align-items:flex-start;flex-direction:column;gap:8px}.metaCheck{grid-template-columns:30px minmax(0,1fr);gap:10px}.metaCheck>small{grid-column:2;padding-top:0}.metaLead{font-size:13px}}
