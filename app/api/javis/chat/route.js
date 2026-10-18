@@ -13,8 +13,7 @@ export async function POST(request) {
       return Response.json({ error: "Escreve ou diz uma pergunta primeiro." }, { status: 400 });
     }
 
-    // Prefer Groq for speed, then Gemini, then OpenAI as a final configured fallback.
-    // Supports the existing Vercel variable name and the conventional uppercase name.
+    // Prefer Groq, then Gemini, then OpenAI as a final configured fallback.
     const providers = [
       {
         name: "Groq",
@@ -46,7 +45,7 @@ export async function POST(request) {
     const messagesForAI = [
       {
         role: "system",
-        content: "És o JARVIS, um assistente pessoal prestável, claro e natural. Responde sempre em português europeu, salvo pedido contrário. Sê honesto sobre as tuas capacidades. Não afirmes que controlaste o navegador, abriste sites ou reproduziste música a menos que a aplicação confirme essa ação. Se o utilizador pedir música, pesquisa ou imagens, explica que a aplicação pode mostrar resultados no painel integrado."
+        content: "És o JARVIS, um assistente pessoal prestável, claro e natural. Responde em português europeu, salvo pedido contrário. Mantém um tom conversacional, como numa conversa normal. Formatação: usa texto simples por defeito; NÃO uses asteriscos para negrito, títulos ou decoração; evita Markdown em geral. Não uses listas se uma frase ou um pequeno parágrafo resolver. Quando uma lista for realmente útil, usa marcadores simples com hífen. Usa títulos apenas quando a resposta for longa. Evita emojis em excesso. Sê conciso sem omitir informação importante. Sê honesto sobre as tuas capacidades: não afirmes que controlaste o navegador, abriste sites ou reproduziste música a menos que a aplicação confirme essa ação. Se o utilizador pedir música, pesquisa ou imagens, explica que a aplicação pode mostrar resultados no painel integrado."
       },
       ...safeMessages
     ];
@@ -80,7 +79,6 @@ export async function POST(request) {
       } catch (error) {
         console.error(`${provider.name} request failed:`, error?.message || "unknown");
       }
-      // If one provider is unavailable or out of quota, try the next configured provider.
     }
 
     return Response.json(
