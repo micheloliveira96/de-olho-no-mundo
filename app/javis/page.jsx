@@ -120,30 +120,28 @@ export default function JavisPage() {
   }, [addMessage]);
 
   const searchMusic = useCallback(async (query) => {
+    const term = query.trim();
+    if (!term) return;
     setPanel("music");
-    setStatus("A pesquisar música…");
+    setStatus("A pesquisar no YouTube…");
     setErrorMessage("");
     try {
-      const response = await fetch("/api/javis/youtube?q=" + encodeURIComponent(query));
+      const response = await fetch("/api/javis/youtube?q=" + encodeURIComponent(term));
       const data = await response.json();
       if (!response.ok) {
-        setErrorMessage(data.error || "Não foi possível pesquisar músicas.");
-        addMessage("assistant", data.error || "Não consegui pesquisar essa música.");
+        setMusicResults([]);
+        setErrorMessage(data.error || "Não foi possível pesquisar no YouTube.");
         return;
       }
       setMusicResults(data.items || []);
-      if (data.items?.length) {
-        addMessage("assistant", "Encontrei " + data.items.length + " resultados para “" + query + "”. Escolhe um para o reproduzir aqui.");
-      } else {
-        addMessage("assistant", "Não encontrei resultados para “" + query + "”. Experimenta outro nome ou artista.");
-      }
+      if (!data.items?.length) setErrorMessage("Não encontrei vídeos para “" + term + "”. Experimenta outro termo.");
     } catch {
+      setMusicResults([]);
       setErrorMessage("Não foi possível ligar à pesquisa do YouTube.");
-      addMessage("assistant", "A pesquisa do YouTube não está disponível neste momento.");
     } finally {
       setStatus("Pronto");
     }
-  }, [addMessage]);
+  }, []);
 
   const searchImages = useCallback(async (query) => {
     setPanel("images");
@@ -338,9 +336,29 @@ export default function JavisPage() {
       playVideo(value);
       return;
     }
-    setYoutubeInput("");
     await searchMusic(value);
   }
+
+  useEffect(() => {
+    if (!videoId || typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: videoTitle || "Vídeo do YouTube",
+        artist: "YouTube",
+        album: "K.E.T.U.R.A."
+      });
+      navigator.mediaSession.playbackState = "playing";
+      navigator.mediaSession.setActionHandler("play", () => setPlayerOpen(true));
+      navigator.mediaSession.setActionHandler("pause", () => navigator.mediaSession.playbackState = "paused");
+    } catch {}
+    return () => {
+      try {
+        navigator.mediaSession.playbackState = "none";
+        navigator.mediaSession.setActionHandler("play", null);
+        navigator.mediaSession.setActionHandler("pause", null);
+      } catch {}
+    };
+  }, [videoId, videoTitle]);
 
   const videoUrl = videoId ? "https://www.youtube-nocookie.com/embed/" + videoId + "?autoplay=1&rel=0" : "";
 
@@ -510,16 +528,16 @@ export default function JavisPage() {
                 {playerOpen && videoId ? <div className="javis-video"><iframe src={videoUrl} title={videoTitle} allow="autoplay; encrypted-media; picture-in-picture; web-share" allowFullScreen /></div> :
                   <div className="javis-placeholder"><div><div style={{fontSize:34,marginBottom:10}}>♫</div><strong>O teu leitor de música</strong><p style={{fontSize:12,lineHeight:1.6}}>Pede uma música por voz ou pesquisa pelo nome e escolhe um resultado para reproduzir aqui.</p></div></div>}
                 <form className="javis-player-form" onSubmit={submitMusicSearch}>
-                  <input className="javis-input" value={youtubeInput} onChange={(event) => setYoutubeInput(event.target.value)} placeholder="Música, artista ou link do YouTube…" aria-label="Pesquisar música ou colar link do YouTube" />
-                  <button className="javis-btn" type="submit">Pesquisar</button>
+                  <input className="javis-input" value={youtubeInput} onChange={(event) => setYoutubeInput(event.target.value)} placeholder="Pesquisar diretamente no YouTube…" aria-label="Pesquisar diretamente no YouTube ou colar link" />
+                  <button className="javis-btn" type="submit" disabled={!youtubeInput.trim() || status === "A pesquisar no YouTube…"}>Buscar no YouTube</button>
                 </form>
                 {playerOpen && videoId && <button type="button" className="javis-secondary" style={{marginTop:10}} onClick={() => { setVideoId(""); setPlayerOpen(false); setVideoTitle(""); }}>Fechar leitor</button>}
-                <p className="javis-hint">Alguns vídeos podem bloquear a reprodução incorporada. A pesquisa automática exige uma chave da YouTube Data API.</p>
+                <p className="javis-hint">A pesquisa é feita diretamente aqui, sem enviar a pesquisa para a conversa. Em alguns telemóveis, o navegador ou o próprio YouTube pode interromper o áudio quando o ecrã bloqueia; uma página web não consegue garantir reprodução em segundo plano em todos os dispositivos.</p>
               </div>
               {musicResults.length > 0 ? <div className="javis-results">{musicResults.map((item) => <article className="javis-result" key={item.id}>
                 <img src={item.thumbnail} alt="" loading="lazy" />
                 <div className="javis-result-info"><p className="javis-result-title">{item.title}</p><p className="javis-result-sub">{item.channel}</p><button type="button" className="javis-btn" onClick={() => playVideo(item.id, item.title)}>▶ Tocar</button></div>
-              </article>)}</div> : <div className="javis-empty">Os resultados de música aparecerão aqui. Experimenta dizer: “K.E.T.U.R.A., toca música relaxante” depois de configurar a API do YouTube.</div>}
+              </article>)}</div> : <div className="javis-empty">Escreve um nome ou artista e carrega em “Buscar no YouTube”. Os resultados aparecem aqui, sem mensagens na conversa.</div>}
             </>}
 
             {panel === "images" && <>
