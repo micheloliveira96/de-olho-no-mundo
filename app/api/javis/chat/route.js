@@ -17,7 +17,7 @@ export async function POST(request) {
           .filter((part) =>
             (part.type === "text" && typeof part.text === "string") ||
             (part.type === "image_url" && typeof part.image_url?.url === "string" &&
-              /^data:image\\/(png|jpeg|jpg|webp|gif);base64,/i.test(part.image_url.url))
+              /^data:image\/(png|jpeg|jpg|webp|gif);base64,/i.test(part.image_url.url))
           )
           .slice(0, 6)
           .map((part) => part.type === "text"
