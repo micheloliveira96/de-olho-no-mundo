@@ -347,8 +347,10 @@ export default function JavisPage() {
   return (
     <main className="javis-shell">
       <style jsx global>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
         * { box-sizing: border-box; }
-        body { margin: 0; background: #02080d; color: #eafcff; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+        body { margin: 0; background: #02080d; color: #eafcff; font-family: "DM Sans", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+        h1,h2,strong,.javis-btn,.javis-secondary,.javis-mic { font-family: "Manrope", "DM Sans", ui-sans-serif, system-ui, sans-serif; }
         button,input { font:inherit; }
         button { cursor:pointer; }
         .javis-shell { min-height:100vh; padding:24px; background:radial-gradient(ellipse at 50% 0%,#073b46 0%,transparent 42%),radial-gradient(ellipse at 100% 50%,#06242b 0%,transparent 40%),#02080d; color:#eafcff; }
@@ -365,19 +367,22 @@ export default function JavisPage() {
         .javis-panel-head h2 { margin:0; font-size:13px; font-weight:700; letter-spacing:1px; color:#b9fffc; }
         .javis-muted { color:#5eaaa9; font-size:11px; }
         .javis-chat { min-height:300px; height:clamp(300px,48vh,560px); overflow:auto; padding:20px; display:flex; flex-direction:column; gap:13px; background-image:linear-gradient(#0c34351b 1px,transparent 1px),linear-gradient(90deg,#0c34351b 1px,transparent 1px); background-size:28px 28px; }
-        .javis-msg { max-width:92%; padding:12px 14px; border-radius:13px; font-size:14px; line-height:1.65; white-space:pre-wrap; overflow-wrap:anywhere; }
+        .javis-msg { max-width:92%; padding:12px 15px; border-radius:15px; font-size:14px; line-height:1.72; letter-spacing:.04px; white-space:pre-wrap; overflow-wrap:anywhere; }
         .javis-msg.assistant { align-self:flex-start; background:#092328; border:1px solid #155158; color:#d9ffff; border-top-left-radius:4px; }
         .javis-msg.user { align-self:flex-end; background:linear-gradient(135deg,#075e64,#087f82); border:1px solid #0b9b9d; color:#efffff; border-top-right-radius:4px; }
-        .javis-chat-form { display:flex; align-items:center; gap:8px; padding:15px; border-top:1px solid #12434a; }\n        .javis-icon-btn { flex:0 0 42px; height:42px; border:1px solid #1b555b; border-radius:11px; background:#071a1f; color:#a9e9e6; font-size:20px; }\n        .javis-attachments { display:flex; gap:8px; flex-wrap:wrap; padding:0 15px 12px; }\n        .javis-attachment { display:flex; align-items:center; gap:7px; max-width:220px; padding:5px 8px; border:1px solid #1b555b; border-radius:9px; background:#071a1f; color:#bce9e6; font-size:11px; }\n        .javis-attachment img { width:28px; height:28px; object-fit:cover; border-radius:5px; }\n        .javis-attachment span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }\n        .javis-attachment button { border:0; background:transparent; color:#ffaaaa; font-size:18px; }
-        .javis-input { width:100%; min-width:0; color:#edffff; background:#020d11; border:1px solid #1b555b; border-radius:11px; padding:12px 13px; outline:none; }
+        .javis-chat-form { display:flex; align-items:center; gap:8px; padding:15px; border-top:1px solid #12434a; }\n        .javis-icon-btn { flex:0 0 44px; height:44px; display:grid; place-items:center; border:1px solid #20565d; border-radius:13px; background:linear-gradient(145deg,#0b252b,#061519); color:#a9f6f0; box-shadow:inset 0 1px #ffffff0b,0 5px 14px #0002; transition:transform .18s ease,border-color .18s ease,background .18s ease,box-shadow .18s ease; }
+        .javis-icon-btn svg { width:20px; height:20px; stroke:currentColor; }
+        .javis-icon-btn:hover { transform:translateY(-1px); border-color:#36d9d1; background:linear-gradient(145deg,#10383e,#082126); box-shadow:0 0 18px #00e5df18; }
+        .javis-icon-btn:focus-visible,.javis-btn:focus-visible,.javis-secondary:focus-visible { outline:2px solid #6ffffa; outline-offset:3px; }\n        .javis-attachments { display:flex; gap:8px; flex-wrap:wrap; padding:0 15px 12px; }\n        .javis-attachment { display:flex; align-items:center; gap:7px; max-width:220px; padding:5px 8px; border:1px solid #1b555b; border-radius:9px; background:#071a1f; color:#bce9e6; font-size:11px; }\n        .javis-attachment img { width:28px; height:28px; object-fit:cover; border-radius:5px; }\n        .javis-attachment span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }\n        .javis-attachment button { border:0; background:transparent; color:#ffaaaa; font-size:18px; }
+        .javis-input { width:100%; min-width:0; color:#edffff; background:#020d11; border:1px solid #1b555b; border-radius:13px; padding:12px 14px; outline:none; font-size:14px; letter-spacing:.05px; }
         .javis-input:focus { border-color:#27f1e8; box-shadow:0 0 0 3px #22d3ee18; }
-        .javis-btn { border:1px solid #12c9c4; background:linear-gradient(135deg,#087e80,#07565e); color:#efffff; border-radius:11px; padding:11px 14px; font-weight:650; white-space:nowrap; box-shadow:0 0 16px #00c8c018; }
+        .javis-btn { border:1px solid #12c9c4; background:linear-gradient(135deg,#087e80,#07565e); color:#efffff; border-radius:12px; padding:11px 14px; font-weight:700; white-space:nowrap; box-shadow:0 5px 16px #00c8c018,inset 0 1px #ffffff12; transition:filter .18s ease,transform .18s ease; }
         .javis-btn:hover { filter:brightness(1.16); }
         .javis-btn:disabled { opacity:.55; cursor:not-allowed; }
-        .javis-secondary { border:1px solid #1b555b; background:#071a1f; color:#a9e9e6; border-radius:11px; padding:10px 12px; }
+        .javis-secondary { border:1px solid #1b555b; background:linear-gradient(145deg,#0a2227,#061519); color:#b5eeeb; border-radius:12px; padding:10px 12px; transition:border-color .18s ease,background .18s ease; }
         .javis-modes { display:flex; gap:10px; padding:12px 15px; border-top:1px solid #12434a; background:#06171b; }
         .javis-modes button { flex:1; }
-        .javis-mic { border:1px solid #12c9c4; background:linear-gradient(135deg,#087e80,#07565e); color:white; border-radius:11px; padding:12px 15px; font-weight:650; }
+        .javis-mic { border:1px solid #12c9c4; background:linear-gradient(135deg,#087e80,#07565e); color:white; border-radius:12px; padding:12px 15px; font-weight:700; box-shadow:0 5px 16px #00c8c018; }
         .javis-mic.listening { background:#3b1020; color:#ffc3d0; border-color:#9f1239; }
         .javis-player-body { padding:16px; }
         .javis-video { width:100%; aspect-ratio:16/9; border:1px solid #1c686d; border-radius:12px; background:#020711; overflow:hidden; box-shadow:0 0 25px #00d9d00c; }
@@ -472,9 +477,9 @@ export default function JavisPage() {
               <input ref={inputRef} className="javis-input" value={input} onChange={(event) => setInput(event.target.value)} placeholder="Escreve a tua mensagem…" aria-label="Mensagem para o K.E.T.U.R.A." />
               <input ref={imageInputRef} type="file" accept="image/*" multiple hidden onChange={(event) => { addAttachments(event.target.files); event.target.value = ""; }} />
               <input ref={fileInputRef} type="file" multiple hidden onChange={(event) => { addAttachments(event.target.files); event.target.value = ""; }} />
-              <button type="button" className="javis-icon-btn" title="Anexar fotografia" aria-label="Anexar fotografia" onClick={() => imageInputRef.current?.click()}>▧</button>
-              <button type="button" className="javis-icon-btn" title="Anexar ficheiro" aria-label="Anexar ficheiro" onClick={() => fileInputRef.current?.click()}>📎</button>
-              <button className="javis-btn" type="submit" disabled={busy || (!input.trim() && !attachments.length)} aria-label="Enviar mensagem">➤</button>
+              <button type="button" className="javis-icon-btn" title="Anexar fotografia" aria-label="Anexar fotografia" onClick={() => imageInputRef.current?.click()}><svg viewBox="0 0 24 24" fill="none" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="8.5" cy="9" r="1.5"/><path d="m21 15-5-5L5 20"/></svg></button>
+              <button type="button" className="javis-icon-btn" title="Anexar ficheiro" aria-label="Anexar ficheiro" onClick={() => fileInputRef.current?.click()}><svg viewBox="0 0 24 24" fill="none" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m21.4 11.1-8.9 8.9a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg></button>
+              <button className="javis-btn" type="submit" disabled={busy || (!input.trim() && !attachments.length)} aria-label="Enviar mensagem"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></button>
             </form>
             {attachments.length > 0 && <div className="javis-attachments">{attachments.map((file, index) => <div className="javis-attachment" key={file.name + index}>
               {file.dataUrl ? <img src={file.dataUrl} alt="" /> : <span>📄</span>}
