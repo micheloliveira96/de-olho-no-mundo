@@ -68,14 +68,10 @@ export default function JavisPage() {
   const [playerOpen, setPlayerOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const [wakeEnabled, setWakeEnabled] = useState(false);
   const processingVoiceRef = useRef(false);
-  const startWakeListeningRef = useRef(null);
   const [attachments, setAttachments] = useState([]);
   const imageInputRef = useRef(null);
   const fileInputRef = useRef(null);
-  const wakeModeRef = useRef(false);
-  const awaitingCommandRef = useRef(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [status, setStatus] = useState("Pronto");
   const [errorMessage, setErrorMessage] = useState("");
@@ -192,7 +188,6 @@ export default function JavisPage() {
       setBusy(false);
       setStatus("Pronto");
       playVideo(youtubeId, "Vídeo do YouTube");
-      if (wakeModeRef.current) { processingVoiceRef.current = false; startWakeListeningRef.current?.(); }
       return;
     }
 
@@ -201,15 +196,13 @@ export default function JavisPage() {
         await searchMusic(extractMusicQuery(text));
         setBusy(false);
         setStatus("Pronto");
-        if (wakeModeRef.current) { processingVoiceRef.current = false; startWakeListeningRef.current?.(); }
-        return;
+          return;
       }
       if (isImageRequest(text)) {
         await searchImages(extractImageQuery(text));
         setBusy(false);
         setStatus("Pronto");
-        if (wakeModeRef.current) { processingVoiceRef.current = false; startWakeListeningRef.current?.(); }
-        return;
+          return;
       }
 
       const response = await fetch("/api/javis/chat", {
@@ -237,18 +230,10 @@ export default function JavisPage() {
         setErrorMessage(message);
         addMessage("assistant", message);
         speak(message, () => {
-          if (wakeModeRef.current) {
-            processingVoiceRef.current = false;
-            startWakeListeningRef.current?.();
-          }
         });
       } else {
         addMessage("assistant", data.answer);
         speak(data.answer, () => {
-          if (wakeModeRef.current) {
-            processingVoiceRef.current = false;
-            startWakeListeningRef.current?.();
-          }
         });
       }
     } catch {
@@ -256,10 +241,6 @@ export default function JavisPage() {
       setErrorMessage(message);
       addMessage("assistant", message);
       speak(message, () => {
-        if (wakeModeRef.current) {
-          processingVoiceRef.current = false;
-          startWakeListeningRef.current?.();
-        }
       });
     } finally {
       setBusy(false);
@@ -337,156 +318,8 @@ export default function JavisPage() {
     }
   }, [addMessage, processMessage]);
 
-  const startWakeListening = useCallback(() => {
-    if (!wakeModeRef.current || typeof window === "undefined") return;
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      wakeModeRef.current = false;
-      setWakeEnabled(false);
-      setIsListening(false);
-      setErrorMessage("Este navegador não suporta reconhecimento de voz. Experimenta o Chrome ou Edge atualizado.");
-      return;
-    }
-    try {
-      const recognition = new SpeechRecognition();
-      recognition.lang = "pt-PT";
-      recognition.interimResults = false;
-      recognition.continuous = false;
-      recognition.onstart = () => {
-        setIsListening(true);
-        setStatus(awaitingCommandRef.current ? "À espera do teu pedido…" : 'À espera de "Oi, K.E.T.U.R.A."');
-      };
-      recognition.onresult = (event) => {
-        const transcript = event.results?.[0]?.[0]?.transcript?.trim();
-        if (!transcript) return;
-        const normalized = transcript.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-        const wakeMatch = normalized.match(/(?:^|\s)((?:(?:oi|ola|hey|ok|okay)[,.:;!?\s]+)?k[\s.]*e[\s.]*t[\s.]*u[\s.]*r[\s.]*a)\b/i);
-        if (wakeMatch) {
-          const command = normalized.slice(wakeMatch.index + wakeMatch[0].length).trim().replace(/^[,.:;!?\s]+/, "");
-          if (command) {
-            awaitingCommandRef.current = false;
-            processingVoiceRef.current = true;
-            recognition.stop();
-            processMessage(command);
-          } else {
-            awaitingCommandRef.current = true;
-            processingVoiceRef.current = true;
-            recognition.stop();
-            speak("Estou a ouvir. Diz o teu pedido.", () => { processingVoiceRef.current = false; startWakeListeningRef.current?.(); });
-          }
-        } else if (awaitingCommandRef.current) {
-          awaitingCommandRef.current = false;
-          processingVoiceRef.current = true;
-          recognition.stop();
-          processMessage(transcript);
-        }
-      };
-      recognition.onerror = (event) => {
-        setIsListening(false);
-        if (event.error === "not-allowed" || event.error === "service-not-allowed") {
-          wakeModeRef.current = false;
-          setWakeEnabled(false);
-          setErrorMessage("O acesso ao microfone foi recusado. Permite-o nas definições do site e ativa a escuta novamente.");
-        } else if (event.error !== "no-speech" && event.error !== "aborted") {
-          setErrorMessage("A escuta foi interrompida. Tenta ativá-la novamente.");
-        }
-      };
-      recognition.onend = () => {
-        setIsListening(false);
-        if (wakeModeRef.current && !processingVoiceRef.current) {
-          window.setTimeout(() => startWakeListeningRef.current?.(), 350);
-        }
-      };
-      recognitionRef.current = recognition;
-      recognition.start();
-    } catch {
-      setIsListening(false);
-      if (wakeModeRef.current) window.setTimeout(() => startWakeListeningRef.current?.(), 800);
-    }
-  }, [processMessage, speak]);
-
-  useEffect(() => { startWakeListeningRef.current = startWakeListening; }, [startWakeListening]);
-
-  useEffect(() => {
-    let cancelled = false;
-    const enableAutomaticListening = async () => {
-      if (wakeModeRef.current || typeof window === "undefined") return;
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        setErrorMessage("Este navegador não suporta escuta automática por voz. Experimenta o Chrome ou Edge atualizado.");
-        return;
-      }
-      if (!navigator.mediaDevices?.getUserMedia) {
-        setErrorMessage("Para a escuta automática, abre esta página em HTTPS num navegador compatível.");
-        return;
-      }
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        stream.getTracks().forEach((track) => track.stop());
-        if (cancelled) return;
-        wakeModeRef.current = true;
-        awaitingCommandRef.current = false;
-        processingVoiceRef.current = false;
-        setWakeEnabled(true);
-        setErrorMessage("");
-        startWakeListeningRef.current?.();
-      } catch (error) {
-        if (cancelled) return;
-        setWakeEnabled(false);
-        setErrorMessage(error?.name === "NotAllowedError"
-          ? "Permite o microfone nas definições do site para que K.E.T.U.R.A. possa ficar à escuta."
-          : "Não consegui iniciar a escuta automática. Verifica o microfone e as permissões do navegador.");
-      }
-    };
-    enableAutomaticListening();
-    return () => {
-      cancelled = true;
-      wakeModeRef.current = false;
-      recognitionRef.current?.abort();
-    };
-  }, []);
-
-  const toggleWakeWord = useCallback(async () => {
-    if (wakeModeRef.current) {
-      wakeModeRef.current = false;
-      awaitingCommandRef.current = false;
-      processingVoiceRef.current = false;
-      setWakeEnabled(false);
-      recognitionRef.current?.abort();
-      setIsListening(false);
-      setStatus("Pronto");
-      return;
-    }
-    if (typeof window === "undefined") return;
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      setErrorMessage("Este navegador não suporta reconhecimento de voz. Experimenta o Chrome ou Edge atualizado.");
-      return;
-    }
-    try {
-      if (!navigator.mediaDevices?.getUserMedia) {
-        setErrorMessage("Este navegador não disponibiliza acesso seguro ao microfone. Abre o site em HTTPS e tenta novamente.");
-        return;
-      }
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach((track) => track.stop());
-      recognitionRef.current?.abort();
-      wakeModeRef.current = true;
-      awaitingCommandRef.current = false;
-      processingVoiceRef.current = false;
-      setWakeEnabled(true);
-      setErrorMessage("");
-      startWakeListeningRef.current?.();
-    } catch (error) {
-      wakeModeRef.current = false;
-      setWakeEnabled(false);
-      setIsListening(false);
-      setErrorMessage(error?.name === "NotAllowedError" ? "O acesso ao microfone foi recusado. Permite-o nas definições do site e tenta novamente." : "Não consegui iniciar o microfone. Verifica as permissões do navegador.");
-    }
-  }, []);
 
   useEffect(() => () => {
-    wakeModeRef.current = false;
     recognitionRef.current?.abort();
     if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel();
   }, []);
@@ -608,7 +441,6 @@ export default function JavisPage() {
                 {isListening ? "■ Parar de ouvir" : "🎙 Conversar por voz"}
               </button>
             </div>
-            <p className="javis-hint" style={{padding:"0 16px 10px",margin:0}}>{wakeEnabled ? 'K.E.T.U.R.A. está à escuta. Diz “Oi, Ketura” e depois faz o teu pedido.' : 'A escuta automática precisa de permissão para usar o microfone.'}</p>
             <div className="javis-actions">
               <label><input type="checkbox" checked={voiceEnabled} onChange={(event) => setVoiceEnabled(event.target.checked)} /> Ler respostas em voz alta</label>
               <button type="button" className="javis-secondary" onClick={() => { window.speechSynthesis?.cancel(); }}>Parar voz</button>
