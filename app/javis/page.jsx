@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import JavisIntegrations from "./JavisIntegrations";
 
 const starterMessages = [
   {
@@ -551,6 +552,7 @@ export default function JavisPage() {
             </>}
           </aside>
         </div>
+        <JavisIntegrations />
         <footer className="javis-footer">K.E.T.U.R.A. · A voz usa as capacidades disponíveis no navegador. A IA e a pesquisa de música precisam de chaves configuradas no servidor. O assistente só navega e executa ações dentro das funcionalidades autorizadas desta página.</footer>
       </div>
     </main>
