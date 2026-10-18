@@ -287,60 +287,61 @@ export default function JavisPage() {
     <main className="javis-shell">
       <style jsx global>{`
         * { box-sizing: border-box; }
-        body { margin: 0; background: #030712; color: #eaf3ff; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+        body { margin: 0; background: #02080d; color: #eafcff; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
         button,input { font:inherit; }
         button { cursor:pointer; }
-        .javis-shell { min-height:100vh; padding:28px; background:radial-gradient(ellipse at 50% -10%,#0d3860 0%,transparent 45%),#030712; color:#eaf3ff; }
-        .javis-wrap { max-width:1240px; margin:0 auto; }
-        .javis-top { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:22px; }
+        .javis-shell { min-height:100vh; padding:24px; background:radial-gradient(ellipse at 50% 0%,#073b46 0%,transparent 42%),radial-gradient(ellipse at 100% 50%,#06242b 0%,transparent 40%),#02080d; color:#eafcff; }
+        .javis-wrap { max-width:1440px; margin:0 auto; }
+        .javis-top { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:20px; }
         .javis-brand { display:flex; align-items:center; gap:13px; }
-        .javis-orb { width:50px; height:50px; display:grid; place-items:center; border-radius:50%; border:1px solid #37d9ff; color:#76e8ff; background:radial-gradient(circle,#164d79,#071529 68%); box-shadow:0 0 28px #0ea5e955,inset 0 0 16px #0ea5e933; font-size:23px; }
-        .javis-brand h1 { margin:0; font-size:22px; letter-spacing:4px; }
-        .javis-brand p { margin:4px 0 0; color:#80a6c8; font-size:12px; letter-spacing:1.4px; }
-        .javis-status { color:#6ee7b7; border:1px solid #145b4a; background:#06261f; padding:8px 12px; border-radius:999px; font-size:12px; white-space:nowrap; }
-        .javis-grid { display:grid; grid-template-columns:minmax(0,1fr); gap:18px; align-items:start; }
-        .javis-panel { border:1px solid #17334b; border-radius:20px; background:linear-gradient(150deg,#081827ee,#06111fee); box-shadow:0 18px 55px #0005; overflow:hidden; min-width:0; }
-        .javis-panel-head { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:17px 19px; border-bottom:1px solid #17334b; }
-        .javis-panel-head h2 { margin:0; font-size:13px; font-weight:700; letter-spacing:1px; }
-        .javis-muted { color:#7f9bb6; font-size:11px; }
-        .javis-chat { min-height:300px; max-height:50vh; overflow:auto; padding:20px; display:flex; flex-direction:column; gap:13px; }
-        .javis-msg { max-width:92%; padding:12px 14px; border-radius:15px; font-size:14px; line-height:1.65; white-space:pre-wrap; overflow-wrap:anywhere; }
-        .javis-msg.assistant { align-self:flex-start; background:#0b2032; border:1px solid #173b55; color:#d9eaff; border-top-left-radius:5px; }
-        .javis-msg.user { align-self:flex-end; background:linear-gradient(135deg,#075985,#155e75); border:1px solid #0e7490; color:#effcff; border-top-right-radius:5px; }
-        .javis-chat-form { display:flex; gap:9px; padding:15px; border-top:1px solid #17334b; }
-        .javis-input { width:100%; min-width:0; color:#edf7ff; background:#030c17; border:1px solid #23445e; border-radius:12px; padding:12px 13px; outline:none; }
-        .javis-input:focus { border-color:#22d3ee; box-shadow:0 0 0 3px #22d3ee1a; }
-        .javis-btn { border:1px solid #1ca7c9; background:linear-gradient(135deg,#087ea4,#075985); color:white; border-radius:12px; padding:11px 14px; font-weight:650; white-space:nowrap; }
+        .javis-orb { width:52px; height:52px; display:grid; place-items:center; border-radius:50%; border:1px solid #20f2ed; color:#6ffffa; background:radial-gradient(circle,#0c5b63,#06151b 68%); box-shadow:0 0 28px #00e5df44,inset 0 0 16px #00e5df33; font-size:23px; }
+        .javis-brand h1 { margin:0; font-size:22px; letter-spacing:4px; text-shadow:0 0 18px #16e0dc55; }
+        .javis-brand p { margin:4px 0 0; color:#62b9bd; font-size:12px; letter-spacing:1.4px; }
+        .javis-status { color:#65fff1; border:1px solid #126d6a; background:#052321; padding:8px 12px; border-radius:999px; font-size:12px; white-space:nowrap; box-shadow:0 0 18px #00d5cb14; }
+        .javis-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:18px; align-items:stretch; }
+        .javis-panel { border:1px solid #14545a; border-radius:18px; background:linear-gradient(145deg,#071b20f5,#041015f5); box-shadow:0 18px 55px #0008,0 0 25px #00d9d014,inset 0 1px #8fffff0c; overflow:hidden; min-width:0; }
+        .javis-panel-head { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:17px 19px; border-bottom:1px solid #12434a; background:linear-gradient(90deg,#0a282b88,transparent); }
+        .javis-panel-head h2 { margin:0; font-size:13px; font-weight:700; letter-spacing:1px; color:#b9fffc; }
+        .javis-muted { color:#5eaaa9; font-size:11px; }
+        .javis-chat { min-height:300px; height:clamp(300px,48vh,560px); overflow:auto; padding:20px; display:flex; flex-direction:column; gap:13px; background-image:linear-gradient(#0c34351b 1px,transparent 1px),linear-gradient(90deg,#0c34351b 1px,transparent 1px); background-size:28px 28px; }
+        .javis-msg { max-width:92%; padding:12px 14px; border-radius:13px; font-size:14px; line-height:1.65; white-space:pre-wrap; overflow-wrap:anywhere; }
+        .javis-msg.assistant { align-self:flex-start; background:#092328; border:1px solid #155158; color:#d9ffff; border-top-left-radius:4px; }
+        .javis-msg.user { align-self:flex-end; background:linear-gradient(135deg,#075e64,#087f82); border:1px solid #0b9b9d; color:#efffff; border-top-right-radius:4px; }
+        .javis-chat-form { display:flex; gap:9px; padding:15px; border-top:1px solid #12434a; }
+        .javis-input { width:100%; min-width:0; color:#edffff; background:#020d11; border:1px solid #1b555b; border-radius:11px; padding:12px 13px; outline:none; }
+        .javis-input:focus { border-color:#27f1e8; box-shadow:0 0 0 3px #22d3ee18; }
+        .javis-btn { border:1px solid #12c9c4; background:linear-gradient(135deg,#087e80,#07565e); color:#efffff; border-radius:11px; padding:11px 14px; font-weight:650; white-space:nowrap; box-shadow:0 0 16px #00c8c018; }
+        .javis-btn:hover { filter:brightness(1.16); }
         .javis-btn:disabled { opacity:.55; cursor:not-allowed; }
-        .javis-secondary { border:1px solid #23445e; background:#0a1a2a; color:#b8d4ed; border-radius:12px; padding:10px 12px; }
-        .javis-modes { display:flex; gap:10px; padding:12px 15px; border-top:1px solid #17334b; background:#071827; }
+        .javis-secondary { border:1px solid #1b555b; background:#071a1f; color:#a9e9e6; border-radius:11px; padding:10px 12px; }
+        .javis-modes { display:flex; gap:10px; padding:12px 15px; border-top:1px solid #12434a; background:#06171b; }
         .javis-modes button { flex:1; }
-        .javis-mic { border:1px solid #1ca7c9; background:linear-gradient(135deg,#087ea4,#075985); color:white; border-radius:12px; padding:12px 15px; font-weight:650; }
+        .javis-mic { border:1px solid #12c9c4; background:linear-gradient(135deg,#087e80,#07565e); color:white; border-radius:11px; padding:12px 15px; font-weight:650; }
         .javis-mic.listening { background:#3b1020; color:#ffc3d0; border-color:#9f1239; }
-        .javis-player-body { padding:17px; }
-        .javis-video { width:100%; aspect-ratio:16/9; border:1px solid #24465f; border-radius:13px; background:#020711; overflow:hidden; }
+        .javis-player-body { padding:16px; }
+        .javis-video { width:100%; aspect-ratio:16/9; border:1px solid #1c686d; border-radius:12px; background:#020711; overflow:hidden; box-shadow:0 0 25px #00d9d00c; }
         .javis-video iframe { width:100%; height:100%; border:0; }
-        .javis-placeholder { width:100%; aspect-ratio:16/9; border:1px dashed #24465f; border-radius:13px; display:grid; place-items:center; text-align:center; padding:20px; background:radial-gradient(circle at center,#0b2a42,#030914 70%); color:#80a6c8; }
+        .javis-placeholder { width:100%; aspect-ratio:16/9; border:1px dashed #1c686d; border-radius:12px; display:grid; place-items:center; text-align:center; padding:20px; background:radial-gradient(circle at center,#0a3438,#030c10 70%); color:#78bdbd; }
         .javis-player-form { display:flex; gap:8px; margin-top:13px; }
-        .javis-hint { margin:10px 0 0; color:#7894ad; font-size:11px; line-height:1.55; }
+        .javis-hint { margin:10px 0 0; color:#609393; font-size:11px; line-height:1.55; }
         .javis-tabs { display:flex; gap:7px; padding:12px 16px 0; max-width:360px; }
-        .javis-tab { flex:1; border:1px solid #1c3a53; background:#071321; color:#91afc9; border-radius:10px; padding:9px; font-size:12px; }
-        .javis-tab.active { border-color:#168dff; background:#0b2b46; color:#e2f4ff; }
-        .javis-results { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; padding:14px 16px 18px; }
-        .javis-result { border:1px solid #1a3b53; border-radius:12px; background:#061321; overflow:hidden; min-width:0; }
+        .javis-tab { flex:1; border:1px solid #17494f; background:#061519; color:#83b9b8; border-radius:9px; padding:9px; font-size:12px; }
+        .javis-tab.active { border-color:#1ad9d2; background:#0b3337; color:#dffffd; box-shadow:0 0 15px #00d9d018; }
+        .javis-results { display:grid; grid-auto-flow:column; grid-auto-columns:minmax(175px,30%); gap:11px; padding:14px 16px 18px; overflow-x:auto; overscroll-behavior-x:contain; scrollbar-width:thin; scrollbar-color:#147c7c #061519; }
+        .javis-result { border:1px solid #17494f; border-radius:11px; background:#041317; overflow:hidden; min-width:0; }
         .javis-result img { width:100%; aspect-ratio:16/9; object-fit:cover; display:block; background:#020711; }
         .javis-result-info { padding:10px; }
-        .javis-result-title { color:#dceeff; font-size:12px; line-height:1.45; margin:0 0 6px; overflow-wrap:anywhere; }
-        .javis-result-sub { color:#7695b1; font-size:10px; margin:0 0 9px; }
+        .javis-result-title { color:#dffffe; font-size:12px; line-height:1.45; margin:0 0 6px; overflow-wrap:anywhere; }
+        .javis-result-sub { color:#70a5a5; font-size:10px; margin:0 0 9px; }
         .javis-result button { width:100%; }
-        .javis-empty { padding:18px; color:#7894ad; font-size:12px; line-height:1.6; }
+        .javis-empty { padding:18px; color:#6fa3a4; font-size:12px; line-height:1.6; }
         .javis-error { border:1px solid #7f1d1d; background:#2b1118; color:#fecaca; padding:11px 13px; margin:12px 16px 0; border-radius:10px; font-size:12px; line-height:1.5; }
-        .javis-footer { color:#5f7c97; font-size:11px; text-align:center; padding:22px 0 4px; line-height:1.6; }
-        .javis-actions { display:flex; align-items:center; gap:9px; flex-wrap:wrap; padding:12px 16px; border-top:1px solid #17334b; }
-        .javis-actions label { color:#93b0ca; font-size:12px; display:flex; align-items:center; gap:7px; }
+        .javis-footer { color:#4d8587; font-size:11px; text-align:center; padding:22px 0 4px; line-height:1.6; }
+        .javis-actions { display:flex; align-items:center; gap:9px; flex-wrap:wrap; padding:12px 16px; border-top:1px solid #12434a; }
+        .javis-actions label { color:#83b9b8; font-size:12px; display:flex; align-items:center; gap:7px; }
         .javis-actions input { accent-color:#22d3ee; }
-        @media(max-width:850px) { .javis-shell { padding:16px; } .javis-chat { min-height:260px; max-height:45vh; } .javis-top { align-items:flex-start; } .javis-brand h1 { font-size:18px; } .javis-status { font-size:10px; padding:7px 9px; } .javis-results { grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); } }
-        @media(max-width:430px) { .javis-player-form { flex-direction:column; } .javis-chat-form { padding:12px; } .javis-msg { max-width:98%; } .javis-results { grid-template-columns:repeat(2,minmax(0,1fr)); padding:10px; gap:8px; } .javis-result-info { padding:8px; } .javis-modes { flex-direction:column; } }
+        @media(max-width:900px) { .javis-shell { padding:16px; } .javis-grid { grid-template-columns:minmax(0,1fr); } .javis-chat { height:42vh; min-height:260px; } .javis-top { align-items:flex-start; } .javis-brand h1 { font-size:18px; } .javis-status { font-size:10px; padding:7px 9px; } .javis-results { grid-auto-columns:minmax(175px,42%); } }
+        @media(max-width:430px) { .javis-player-form { flex-direction:column; } .javis-chat-form { padding:12px; } .javis-msg { max-width:98%; } .javis-results { grid-auto-columns:78%; padding:10px; gap:8px; } .javis-result-info { padding:8px; } .javis-modes { flex-direction:column; } }
       `}</style>
       <div className="javis-wrap">
         <header className="javis-top">
@@ -378,7 +379,7 @@ export default function JavisPage() {
           </section>
 
           <aside className="javis-panel">
-            <div className="javis-panel-head"><h2>CONTEÚDOS E RESULTADOS</h2><span className="javis-muted">PAINEL HORIZONTAL</span></div>
+            <div className="javis-panel-head"><h2>CONTEÚDOS E RESULTADOS</h2><span className="javis-muted">SCROLL HORIZONTAL</span></div>
             <div className="javis-tabs">
               <button type="button" className={"javis-tab " + (panel === "music" ? "active" : "")} onClick={() => setPanel("music")}>♫ Vídeos e música</button>
               <button type="button" className={"javis-tab " + (panel === "images" ? "active" : "")} onClick={() => setPanel("images")}>▧ Imagens</button>
