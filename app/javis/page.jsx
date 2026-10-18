@@ -25,17 +25,21 @@ function getYouTubeId(value) {
 }
 
 function isMusicRequest(text) {
-  return /\b(toca|toque|reproduz|procura|pesquisa|encontra|quero ouvir|mete)\b/i.test(text) &&
-    /\b(m[uú]sica|musicas|can[cç][aã]o|can[cç][oõ]es|youtube|som|playlist|artista|[a-z0-9]+\s+(ao vivo|remix))\b/i.test(text);
+  const hasAction = /\b(toca|tocar|toque|reproduz|reproduzir|procura|pesquisa|encontra|quero ouvir|mete|p[oõ]e)\b/i.test(text);
+  const hasMusicTarget = /\b(m[uú]sica|musicas|can[cç][aã]o|can[cç][oõ]es|youtube|som|playlist|artista|ouvir|tocar|remix|instrumental|relaxante|rock|pop|rap|fado|jazz)\b/i.test(text);
+  return hasAction && hasMusicTarget;
 }
 
 function extractMusicQuery(text) {
-  return text
+  const cleaned = text
     .replace(/^(jarvis[,: ]*)?/i, "")
-    .replace(/\b(toca|toque|reproduz|procura|pesquisa|encontra|quero ouvir|mete)\b/ig, "")
-    .replace(/\b(m[uú]sica|musicas|can[cç][aã]o|can[cç][oõ]es|no youtube|youtube|por favor)\b/ig, "")
+    .replace(/\b(toca|tocar|toque|reproduz|reproduzir|procura|pesquisa|encontra|quero ouvir|quero|ouve|mete|p[oõ]e|por favor)\b/ig, " ")
+    .replace(/\b(uma|a|o|as|os|m[uú]sica|musicas|can[cç][aã]o|can[cç][oõ]es|no youtube|youtube|para mim|a[ií]|agora)\b/ig, " ")
     .replace(/[“”"]/g, "")
-    .trim() || text.trim();
+    .replace(/[,.!?;:]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return cleaned || text.trim();
 }
 
 function isImageRequest(text) {
@@ -181,9 +185,16 @@ export default function JavisPage() {
       if (isMusicRequest(text)) {
         const query = extractMusicQuery(text);
         await searchMusic(query);
-      } else if (isImageRequest(text)) {
+        setBusy(false);
+        setStatus("Pronto");
+        return;
+      }
+      if (isImageRequest(text)) {
         const query = extractImageQuery(text);
         await searchImages(query);
+        setBusy(false);
+        setStatus("Pronto");
+        return;
       }
 
       const response = await fetch("/api/javis/chat", {
