@@ -2,10 +2,15 @@ export const runtime = "nodejs";
 
 export async function POST(request) {
   try {
-    const apiKey = process.env.OPENAI_API_KEY;
+    // Prefer the free-tier Groq API when configured; keep OpenAI as a fallback.
+    const groqKey = process.env.GROQ_API_KEY;
+    const openaiKey = process.env.OPENAI_API_KEY;
+    const useGroq = Boolean(groqKey);
+    const apiKey = useGroq ? groqKey : openaiKey;
+
     if (!apiKey) {
       return Response.json(
-        { error: "A inteligência artificial ainda não está ligada. Adiciona OPENAI_API_KEY nas variáveis de ambiente da Vercel." },
+        { error: "A IA ainda não está ligada. Cria uma chave no Groq Console e adiciona GROQ_API_KEY nas variáveis de ambiente da Vercel." },
         { status: 503 }
       );
     }
@@ -21,14 +26,21 @@ export async function POST(request) {
       return Response.json({ error: "Escreve ou diz uma pergunta primeiro." }, { status: 400 });
     }
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const endpoint = useGroq
+      ? "https://api.groq.com/openai/v1/chat/completions"
+      : "https://api.openai.com/v1/chat/completions";
+    const model = useGroq
+      ? (process.env.GROQ_MODEL || "openai/gpt-oss-120b")
+      : (process.env.OPENAI_MODEL || "gpt-4o-mini");
+
+    const response = await fetch(endpoint, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+        model,
         messages: [
           {
             role: "system",
@@ -43,9 +55,13 @@ export async function POST(request) {
 
     const data = await response.json();
     if (!response.ok) {
-      console.error("OpenAI API error:", response.status, data?.error?.type || data?.error?.code || "unknown");
+      console.error(`${useGroq ? "Groq" : "OpenAI"} API error:`, response.status, data?.error?.type || data?.error?.code || "unknown");
       return Response.json(
-        { error: response.status === 429 ? "O serviço de IA atingiu um limite de utilização. Tenta novamente mais tarde." : "Não foi possível obter resposta da IA. Verifica a chave e a configuração do serviço." },
+        { error: response.status === 429
+          ? (useGroq
+            ? "O limite gratuito da IA foi atingido. Aguarda a reposição da quota ou tenta novamente mais tarde."
+            : "A quota da OpenAI está esgotada. Configura GROQ_API_KEY na Vercel para usar a alternativa gratuita.")
+          : "Não foi possível obter resposta da IA. Verifica a chave e a configuração do serviço." },
         { status: response.status === 429 ? 429 : 502 }
       );
     }
