@@ -18,8 +18,8 @@ const assets = [
 const money = (n) => n == null || !Number.isFinite(Number(n)) ? "N/D" : new Intl.NumberFormat("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 4 }).format(n);
 const usd = (n) => n == null || !Number.isFinite(Number(n)) ? "N/D" : new Intl.NumberFormat("en-US", { style:"currency", currency:"USD", maximumFractionDigits:n < 1 ? 6 : 2 }).format(n);
 const clocks = [
-  { city: "Brasília", zone: "America/Sao_Paulo", flag: "🇧🇷" },
-  { city: "Portugal", zone: "Europe/Lisbon", flag: "🇵🇹" },
+  { city: "Recife", zone: "America/Recife", flag: "🇧🇷", weatherKey: "recife" },
+  { city: "Cacia, Aveiro", zone: "Europe/Lisbon", flag: "🇵🇹", weatherKey: "cacia" },
   { city: "Estados Unidos", zone: "America/New_York", flag: "🇺🇸" }
 ];
 
@@ -43,6 +43,7 @@ export default function Home() {
   const [lastUpdated,setLastUpdated] = useState(null);
   const [loading,setLoading] = useState(true);
   const [clockNow,setClockNow] = useState(new Date());
+  const [weather,setWeather] = useState({});
   const filtered = useMemo(() => assets.filter(a => (a.name+" "+a.symbol).toLowerCase().includes(search.toLowerCase()) && (active !== "Favoritos" || favorites.includes(a.symbol))),[search,active,favorites]);
   const sortedCrypto = useMemo(() => [...crypto].sort((a,b) => { const av = sortCrypto === "price" ? a.price : sortCrypto === "change" ? a.change24h : a.marketCap; const bv = sortCrypto === "price" ? b.price : sortCrypto === "change" ? b.change24h : b.marketCap; if (av == null) return bv == null ? 0 : 1; if (bv == null) return -1; return bv - av; }),[crypto,sortCrypto]);
 
@@ -103,6 +104,21 @@ export default function Home() {
   }, [loadCrypto]);
 
   useEffect(() => {
+    let alive = true;
+    const refreshWeather = async () => {
+      try {
+        const response = await fetch("/api/weather", {cache:"no-store"});
+        if (!response.ok) throw new Error("Weather unavailable");
+        const data = await response.json();
+        if (alive && data.locations) setWeather(data.locations);
+      } catch { if (alive) setWeather({}); }
+    };
+    refreshWeather();
+    const weatherTimer = setInterval(refreshWeather, 5 * 60 * 1000);
+    return () => { alive = false; clearInterval(weatherTimer); };
+  }, []);
+
+  useEffect(() => {
     const timer = setInterval(() => setClockNow(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
@@ -144,7 +160,7 @@ export default function Home() {
         <span className="breadcrumb">Painel <b>/</b> {active}</span>
         <div className="clockActions">
           <div className="worldClocks" aria-label="Horários locais">
-            {clocks.map(c=><div className="clock" key={c.zone}><span className="clockFlag">{c.flag}</span><span className="clockText"><small>{c.city}</small><b>{new Intl.DateTimeFormat("pt-PT",{timeZone:c.zone,hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).format(clockNow)}</b></span></div>)}
+            {clocks.map(c=><div className="clock" key={c.zone}><span className="clockFlag">{c.flag}</span><span className="clockText"><small>{c.city}</small><b>{new Intl.DateTimeFormat("pt-PT",{timeZone:c.zone,hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).format(clockNow)}</b>{c.weatherKey && <span className="clockTemperature" title={weather[c.weatherKey] ? "Temperatura atual · Open-Meteo" : "Temperatura indisponível"}>{weather[c.weatherKey] ? `${Math.round(weather[c.weatherKey].temperature)}°C` : "—°C"}</span>}</span></div>)}
           </div>
           <a className="keturaButton" href="/jarvis" aria-label="Abrir K.E.T.U.R.A.">✦ <span>K.E.T.U.R.A.</span></a>
         </div>
