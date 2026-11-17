@@ -2,7 +2,8 @@
 
 import { useMemo, useRef, useState } from "react";
 
-const youtubePattern = /^https?:\/\/(?:(?:www\.|m\.)?youtube\.com\/(?:watch\?[^#]*v=|shorts\/|live\/)|youtu\.be\/)[A-Za-z0-9_-]{11}(?:[&#?\/].*)?$/i;\nconst instagramPattern = /^https?:\/\/(?:www\.)?instagram\.com\/(?:reel|reels|p|tv)\/([A-Za-z0-9_-]+)\/?(?:\?.*)?$/i;
+const youtubePattern = /^https?:\/\/(?:(?:www\.|m\.)?youtube\.com\/(?:watch\?[^#]*v=|shorts\/|live\/)|youtu\.be\/)[A-Za-z0-9_-]{11}(?:[&#?\/].*)?$/i;
+const instagramPattern = /^https?:\/\/(?:www\.)?instagram\.com\/(?:reel|reels|p|tv)\/([A-Za-z0-9_-]+)\/?(?:\?.*)?$/i;
 
 export default function DownloaderPage() {
   const [url, setUrl] = useState("");
