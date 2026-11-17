@@ -11,7 +11,8 @@ export default function DownloaderPage() {
   const [file, setFile] = useState(null);
   const [message, setMessage] = useState("");
   const inputRef = useRef(null);
-  const platform = useMemo(() => instagramPattern.test(url.trim()) ? "Instagram" : youtubePattern.test(url.trim()) ? "YouTube" : null, [url]);\n  const valid = Boolean(platform);
+  const platform = useMemo(() => instagramPattern.test(url.trim()) ? "Instagram" : youtubePattern.test(url.trim()) ? "YouTube" : null, [url]);
+  const valid = Boolean(platform);
   const preview = useMemo(() => file ? URL.createObjectURL(file) : null, [file]);
 
   function analyze(event) {
