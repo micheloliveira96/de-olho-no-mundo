@@ -39,38 +39,38 @@ export default function DownloaderPage() {
   }
   return (
     <main className="download-page">
-      <header className="topbar">
-        <a className="brand" href="/">◉ <span>DE OLHO NO MUNDO</span></a>
-        <a className="back" href="/">← Voltar ao painel</a>
+      <header className="dl-topbar">
+        <a className="dl-brand" href="/">◉ <span>DE OLHO NO MUNDO</span></a>
+        <a className="dl-back" href="/">← Voltar ao painel</a>
       </header>
-      <section className="hero">
-        <div className="eyebrow">FERRAMENTAS · VÍDEO</div>
+      <section className="dl-hero">
+        <div className="dl-eyebrow">FERRAMENTAS · VÍDEO</div>
         <h1>Vídeo <em>Downloader</em></h1>
         <p>Importa, pré-visualiza e guarda vídeos autorizados do YouTube e Instagram, num espaço simples e seguro.</p>
-        <form className="link-form" onSubmit={analyze}>
+        <form className="dl-link-form" onSubmit={analyze}>
           <label htmlFor="video-url">Link da publicação</label>
-          <div className="field-row">
+          <div className="dl-field-row">
             <input id="video-url" value={url} onChange={e => {setUrl(e.target.value);setChecked(false);}} placeholder="Cole um link do YouTube ou Instagram..." autoComplete="off" />
             <button type="submit">Analisar link</button>
           </div>
-          {checked && <p className={valid ? "notice" : "error"} role="status">{message}</p>}
+          {checked && <p className={valid ? "dl-notice" : "dl-error"} role="status">{message}</p>}
         </form>
-        <div className="divider"><span>OU</span></div>
-        <div className="upload">
-          <div className="upload-icon">↥</div>
+        <div className="dl-divider"><span>OU</span></div>
+        <div className="dl-upload">
+          <div className="dl-upload-icon">↥</div>
           <h2>Importar vídeo autorizado</h2>
           <p>Seleciona o ficheiro original ou uma cópia que tens direito de utilizar. O ficheiro permanece no teu navegador.</p>
-          <input ref={inputRef} type="file" accept="video/*" onChange={chooseFile} className="hidden" aria-label="Selecionar vídeo" />
-          <button type="button" className="secondary" onClick={() => inputRef.current?.click()}>Escolher vídeo</button>
+          <input ref={inputRef} type="file" accept="video/*" onChange={chooseFile} className="dl-hidden" aria-label="Selecionar vídeo" />
+          <button type="button" className="dl-secondary" onClick={() => inputRef.current?.click()}>Escolher vídeo</button>
         </div>
-        {file && preview && <div className="result">
+        {file && preview && <div className="dl-result">
           <h2>O teu vídeo está pronto</h2>
           <video controls playsInline src={preview} />
-          <div className="result-bottom"><span>{file.name} · {(file.size / 1048576).toFixed(1)} MB</span><button type="button" onClick={download}>Descarregar cópia</button></div>
+          <div className="dl-result-bottom"><span>{file.name} · {(file.size / 1048576).toFixed(1)} MB</span><button type="button" onClick={download}>Descarregar cópia</button></div>
         </div>}
-        {!checked && message && <p className="notice" role="status">{message}</p>}
+        {!checked && message && <p className="dl-notice" role="status">{message}</p>}
       </section>
-      <section className="features">
+      <section className="dl-features">
         <article><strong>01</strong><h3>YouTube e Instagram</h3><p>Validação de links das duas plataformas e importação de ficheiros de vídeo.</p></article>
         <article><strong>02</strong><h3>Privacidade</h3><p>A pré-visualização local não envia os teus ficheiros para um servidor.</p></article>
         <article><strong>03</strong><h3>Sem atalhos inseguros</h3><p>Sem solicitar passwords ou contornar restrições de contas privadas.</p></article>
